@@ -4,7 +4,7 @@ mod handlers;
 mod models;
 mod state;
 
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::Router;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
@@ -42,6 +42,7 @@ async fn main() {
         // REFERENCE TABLES
         .route("/cities", get(handlers::get_cities))
         .route("/departments", get(handlers::get_departments))
+        .route("/departments/:name", delete(handlers::delete_department))
         .route("/income-levels", get(handlers::get_income_levels))
         .route("/user-roles", get(handlers::get_user_roles))
         .layer(cors)

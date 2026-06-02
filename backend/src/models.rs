@@ -99,6 +99,10 @@ pub struct RegisterRequest {
     pub email: String,
     pub password: String,
     pub role: UserRole,
+    pub city: Option<String>,
+    pub department: Option<String>,
+    pub income_status: Option<IncomeLevel>,
+    pub gpa: Option<f32>,
 }
 
 #[derive(Debug, Serialize)]

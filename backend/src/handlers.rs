@@ -195,6 +195,32 @@ pub async fn register(
             .into_response();
     }
 
+    // If student role with all required fields, create student record
+    if body.role == crate::models::UserRole::Student {
+        if let (Some(city), Some(department), Some(income_status)) =
+            (&body.city, &body.department, &body.income_status)
+        {
+            let _ = sqlx::query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
+                .bind(department)
+                .execute(&state.db_pool)
+                .await;
+
+            if let Err(e) = sqlx::query(
+                "INSERT INTO students (profile_id, gpa, city, department, income_status) VALUES ($1, $2, $3, $4, $5)",
+            )
+            .bind(user_id)
+            .bind(body.gpa)
+            .bind(city)
+            .bind(department)
+            .bind(income_status)
+            .execute(&state.db_pool)
+            .await
+            {
+                tracing::error!("Failed to create student after signup: {}", e);
+            }
+        }
+    }
+
     if body.role == crate::models::UserRole::Donor {
         if let Err(e) = sqlx::query(
             "INSERT INTO donors (profile_id, is_verified) VALUES ($1, FALSE)",
@@ -389,6 +415,13 @@ pub async fn update_student(
     // On first creation, city, department, income_status are required
     if !exists && (body.city.is_none() || body.department.is_none() || body.income_status.is_none()) {
         return (StatusCode::BAD_REQUEST, Json("İlk kayıtta şehir, departman ve gelir düzeyi zorunludur")).into_response();
+    }
+
+    if let Some(ref department) = body.department {
+        let _ = sqlx::query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
+            .bind(department)
+            .execute(&state.db_pool)
+            .await;
     }
 
     match sqlx::query(
@@ -687,6 +720,86 @@ pub async fn get_departments(State(state): State<AppState>) -> impl IntoResponse
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(format!("Failed to fetch departments: {}", e)),
+            )
+                .into_response()
+        }
+    }
+}
+
+pub async fn delete_department(
+    State(state): State<AppState>,
+    Path(name): Path<String>,
+) -> impl IntoResponse {
+    let mut tx = match state.db_pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            tracing::error!("Failed to begin transaction: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json("Failed to begin transaction".to_string()),
+            )
+                .into_response();
+        }
+    };
+
+    // Remove department from scholarship target arrays
+    if let Err(e) = sqlx::query(
+        "UPDATE scholarships SET target_departments = array_remove(target_departments, $1)",
+    )
+    .bind(&name)
+    .execute(&mut *tx)
+    .await
+    {
+        tracing::error!("Failed to update scholarships: {}", e);
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(format!("Failed to update scholarships: {}", e)),
+        )
+            .into_response();
+    }
+
+    // Delete students referencing this department
+    if let Err(e) = sqlx::query("DELETE FROM students WHERE department = $1")
+        .bind(&name)
+        .execute(&mut *tx)
+        .await
+    {
+        tracing::error!("Failed to delete students: {}", e);
+        let _ = tx.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(format!("Failed to delete students: {}", e)),
+        )
+            .into_response();
+    }
+
+    // Delete the department itself
+    match sqlx::query("DELETE FROM departments WHERE name = $1")
+        .bind(&name)
+        .execute(&mut *tx)
+        .await
+    {
+        Ok(result) if result.rows_affected() == 0 => {
+            let _ = tx.rollback().await;
+            (
+                StatusCode::NOT_FOUND,
+                Json(format!("Department '{}' not found", name)),
+            )
+                .into_response()
+        }
+        Ok(_) => {
+            tx.commit().await.unwrap_or_else(|e| {
+                tracing::error!("Failed to commit transaction: {}", e);
+            });
+            (StatusCode::OK, Json(format!("Department '{}' deleted", name))).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to delete department: {}", e);
+            let _ = tx.rollback().await;
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(format!("Failed to delete department: {}", e)),
             )
                 .into_response()
         }

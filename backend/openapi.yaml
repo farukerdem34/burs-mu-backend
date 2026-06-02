@@ -18,8 +18,9 @@ paths:
       summary: Yeni kullanıcı kaydet
       description: |
         Supabase Auth üzerinden kullanıcı oluşturur, email'i otomatik onaylar
-        ve profiles tablosuna kaydı ekler. Öğrenciye ait alanlar (şehir, departman, GPA vb.)
-        kayıt sırasında istenmez; öğrenci bu bilgileri sonradan PUT /students/{profile_id} ile girebilir.
+        ve profiles tablosuna kaydı ekler.
+        Öğrenciye ait alanlar (şehir, departman, GPA vb.) opsiyoneldir;
+        kayıt anında girilebileceği gibi sonradan PUT /students/{profile_id} ile de eklenebilir.
       tags: [Auth]
       requestBody:
         required: true
@@ -348,6 +349,30 @@ paths:
                 items:
                   $ref: "#/components/schemas/NamedItem"
 
+  /departments/{name}:
+    delete:
+      summary: Departman sil (sadece yönetici)
+      description: |
+        Departmanı ve ona bağlı öğrenci kayıtlarını siler,
+        ayrıca bursların target_departments array'inden kaldırır.
+      tags: [Referanslar]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Departman başarıyla silindi
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Department 'asd' deleted"
+        "404":
+          description: Departman bulunamadı
+
   /income-levels:
     get:
       summary: Gelir düzeylerini listele
@@ -520,6 +545,24 @@ components:
           example: "GucluSifre123"
         role:
           $ref: "#/components/schemas/UserRole"
+        city:
+          type: string
+          description: "Rol 'student' ise kayıt anında girilebilir, sonradan da eklenebilir."
+          example: İstanbul
+        department:
+          type: string
+          description: "Rol 'student' ise kayıt anında girilebilir, sonradan da eklenebilir."
+          example: Bilgisayar Mühendisliği
+        income_status:
+          $ref: "#/components/schemas/IncomeLevel"
+          description: "Rol 'student' ise kayıt anında girilebilir, sonradan da eklenebilir."
+        gpa:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          maximum: 4
+          description: "Not ortalaması (opsiyonel)"
 
     RegisterResponse:
       type: object
