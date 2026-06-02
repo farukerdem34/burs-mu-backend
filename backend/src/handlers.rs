@@ -8,8 +8,8 @@ use uuid::Uuid;
 
 use crate::engine;
 use crate::models::{
-    CreateProfileRequest, CreateScholarshipRequest, CreateStudentRequest, MatchResult, Profile,
-    Scholarship, ScholarshipRule, Student,
+    City, CreateProfileRequest, CreateScholarshipRequest, CreateStudentRequest, Department,
+    IncomeLevelRow, MatchResult, Profile, Scholarship, ScholarshipRule, Student, UserRoleRow,
 };
 use crate::state::AppState;
 
@@ -153,10 +153,37 @@ pub async fn get_profile(
 
 // --- STUDENTS ---
 
+async fn validate_city(state: &AppState, city: &str) -> Result<(), String> {
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM cities WHERE name = $1)",
+    )
+    .bind(city)
+    .fetch_one(&state.db_pool)
+    .await
+    .unwrap_or(false);
+
+    if exists {
+        Ok(())
+    } else {
+        Err(format!("'{}' geçerli bir Türkiye şehri değil", city))
+    }
+}
+
+async fn validate_cities(state: &AppState, cities: &[String]) -> Result<(), String> {
+    for city in cities {
+        validate_city(state, city).await?;
+    }
+    Ok(())
+}
+
 pub async fn create_student(
     State(state): State<AppState>,
     Json(body): Json<CreateStudentRequest>,
 ) -> impl IntoResponse {
+    if let Err(msg) = validate_city(&state, &body.city).await {
+        return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
+    }
+
     match sqlx::query(
         "INSERT INTO students (profile_id, gpa, city, department, income_status, is_verified) VALUES ($1, $2, $3, $4, $5, $6)",
     )
@@ -238,6 +265,26 @@ pub async fn create_scholarship(
     State(state): State<AppState>,
     Json(body): Json<CreateScholarshipRequest>,
 ) -> impl IntoResponse {
+    if let Some(ref cities) = body.target_cities {
+        if !cities.is_empty() {
+            if let Err(msg) = validate_cities(&state, cities).await {
+                return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
+            }
+        }
+    }
+
+    // Auto-insert new departments into the departments table
+    if let Some(ref deps) = body.target_departments {
+        if !deps.is_empty() {
+            for dep in deps {
+                let _ = sqlx::query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
+                    .bind(dep)
+                    .execute(&state.db_pool)
+                    .await;
+            }
+        }
+    }
+
     match sqlx::query(
         "INSERT INTO scholarships (donor_id, title, quota, is_active, min_gpa, target_cities, target_departments, target_income_levels) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
@@ -317,5 +364,75 @@ pub async fn get_scholarship(
     {
         Ok(scholarship) => (StatusCode::OK, Json(scholarship)).into_response(),
         Err(_) => (StatusCode::NOT_FOUND, Json("Scholarship not found")).into_response(),
+    }
+}
+
+// --- CITIES & DEPARTMENTS ---
+
+pub async fn get_cities(State(state): State<AppState>) -> impl IntoResponse {
+    match sqlx::query_as::<_, City>("SELECT name FROM cities ORDER BY name")
+        .fetch_all(&state.db_pool)
+        .await
+    {
+        Ok(cities) => (StatusCode::OK, Json(cities)).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to fetch cities: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(format!("Failed to fetch cities: {}", e)),
+            )
+                .into_response()
+        }
+    }
+}
+
+pub async fn get_user_roles(State(state): State<AppState>) -> impl IntoResponse {
+    match sqlx::query_as::<_, UserRoleRow>("SELECT name FROM user_roles ORDER BY name")
+        .fetch_all(&state.db_pool)
+        .await
+    {
+        Ok(roles) => (StatusCode::OK, Json(roles)).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to fetch user_roles: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(format!("Failed to fetch user_roles: {}", e)),
+            )
+                .into_response()
+        }
+    }
+}
+
+pub async fn get_income_levels(State(state): State<AppState>) -> impl IntoResponse {
+    match sqlx::query_as::<_, IncomeLevelRow>("SELECT name FROM income_levels ORDER BY name")
+        .fetch_all(&state.db_pool)
+        .await
+    {
+        Ok(levels) => (StatusCode::OK, Json(levels)).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to fetch income_levels: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(format!("Failed to fetch income_levels: {}", e)),
+            )
+                .into_response()
+        }
+    }
+}
+
+pub async fn get_departments(State(state): State<AppState>) -> impl IntoResponse {
+    match sqlx::query_as::<_, Department>("SELECT name FROM departments ORDER BY name")
+        .fetch_all(&state.db_pool)
+        .await
+    {
+        Ok(departments) => (StatusCode::OK, Json(departments)).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to fetch departments: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(format!("Failed to fetch departments: {}", e)),
+            )
+                .into_response()
+        }
     }
 }

@@ -30,6 +30,11 @@ async fn main() {
         // SCHOLARSHIPS
         .route("/scholarships", post(handlers::create_scholarship).get(handlers::get_scholarships))
         .route("/scholarships/:id", get(handlers::get_scholarship))
+        // REFERENCE TABLES
+        .route("/cities", get(handlers::get_cities))
+        .route("/departments", get(handlers::get_departments))
+        .route("/income-levels", get(handlers::get_income_levels))
+        .route("/user-roles", get(handlers::get_user_roles))
         .with_state(state);
 
     let addr: SocketAddr = format!("0.0.0.0:{}", server_port)

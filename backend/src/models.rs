@@ -92,6 +92,26 @@ pub struct CreateScholarshipRequest {
     pub target_income_levels: Option<Vec<IncomeLevel>>,
 }
 
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct City {
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct Department {
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct IncomeLevelRow {
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct UserRoleRow {
+    pub name: String,
+}
+
 #[derive(Debug, Serialize)]
 pub struct MatchResult {
     pub scholarship_id: Uuid,
