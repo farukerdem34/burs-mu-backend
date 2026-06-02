@@ -24,6 +24,8 @@ async fn main() {
 
     let app = Router::new()
         .route("/match/:student_id", post(handlers::match_student))
+        // AUTH
+        .route("/register", post(handlers::register))
         // PROFILES
         .route("/profiles", post(handlers::create_profile).get(handlers::get_profiles))
         .route("/profiles/:id", get(handlers::get_profile))

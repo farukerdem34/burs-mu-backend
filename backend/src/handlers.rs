@@ -9,7 +9,8 @@ use uuid::Uuid;
 use crate::engine;
 use crate::models::{
     City, CreateProfileRequest, CreateScholarshipRequest, CreateStudentRequest, Department,
-    IncomeLevelRow, MatchResult, Profile, Scholarship, ScholarshipRule, Student, UserRoleRow,
+    IncomeLevelRow, MatchResult, Profile, RegisterRequest, RegisterResponse, Scholarship,
+    ScholarshipRule, Student, UserRoleRow,
 };
 use crate::state::AppState;
 
@@ -116,6 +117,166 @@ pub async fn create_profile(
                 .into_response()
         }
     }
+}
+
+pub async fn register(
+    State(state): State<AppState>,
+    Json(body): Json<RegisterRequest>,
+) -> impl IntoResponse {
+    // Check if email already exists
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM auth.users WHERE email = $1)",
+    )
+    .bind(&body.email)
+    .fetch_one(&state.db_pool)
+    .await
+    .unwrap_or(false);
+
+    if exists {
+        return (StatusCode::CONFLICT, Json("Bu email zaten kayıtlı")).into_response();
+    }
+
+    // Create user directly via SQL with pgcrypto for password hashing
+    let result = sqlx::query_as::<_, (Uuid,)>(
+        r#"
+        INSERT INTO auth.users (
+            instance_id, id, aud, role, email,
+            encrypted_password, email_confirmed_at, confirmation_sent_at,
+            raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+        ) VALUES (
+            '00000000-0000-0000-0000-000000000000',
+            gen_random_uuid(),
+            'authenticated',
+            'authenticated',
+            $1,
+            crypt($2, gen_salt('bf')),
+            now(), now(),
+            jsonb_build_object('provider', 'email', 'providers', ARRAY['email']),
+            jsonb_build_object('role', $3),
+            now(), now()
+        )
+        RETURNING id
+        "#,
+    )
+    .bind(&body.email)
+    .bind(&body.password)
+    .bind(&body.role)
+    .fetch_one(&state.db_pool)
+    .await;
+
+    let user_id = match result {
+        Ok((id,)) => id,
+        Err(e) => {
+            tracing::error!("Failed to create auth user: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json("Kullanıcı oluşturulamadı"),
+            )
+                .into_response();
+        }
+    };
+
+    // Insert profile
+    if let Err(e) = sqlx::query("INSERT INTO profiles (id, role) VALUES ($1, $2)")
+        .bind(user_id)
+        .bind(&body.role)
+        .execute(&state.db_pool)
+        .await
+    {
+        tracing::error!("Failed to create profile after signup: {}", e);
+        let _ = sqlx::query("DELETE FROM auth.users WHERE id = $1")
+            .bind(user_id)
+            .execute(&state.db_pool)
+            .await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json("Profil oluşturulamadı, kayıt geri alındı"),
+        )
+            .into_response();
+    }
+
+    // If student role, also insert into students table
+    if body.role == crate::models::UserRole::Student {
+        let city = match &body.city {
+            Some(c) => c.clone(),
+            None => {
+                let _ = sqlx::query("DELETE FROM profiles WHERE id = $1")
+                    .bind(user_id)
+                    .execute(&state.db_pool)
+                    .await;
+                let _ = sqlx::query("DELETE FROM auth.users WHERE id = $1")
+                    .bind(user_id)
+                    .execute(&state.db_pool)
+                    .await;
+                return (StatusCode::BAD_REQUEST, Json("Öğrenci kaydı için şehir gerekli")).into_response();
+            }
+        };
+        let department = match &body.department {
+            Some(d) => d.clone(),
+            None => {
+                let _ = sqlx::query("DELETE FROM profiles WHERE id = $1")
+                    .bind(user_id)
+                    .execute(&state.db_pool)
+                    .await;
+                let _ = sqlx::query("DELETE FROM auth.users WHERE id = $1")
+                    .bind(user_id)
+                    .execute(&state.db_pool)
+                    .await;
+                return (StatusCode::BAD_REQUEST, Json("Öğrenci kaydı için departman gerekli")).into_response();
+            }
+        };
+        let income_status = match &body.income_status {
+            Some(i) => i.clone(),
+            None => {
+                let _ = sqlx::query("DELETE FROM profiles WHERE id = $1")
+                    .bind(user_id)
+                    .execute(&state.db_pool)
+                    .await;
+                let _ = sqlx::query("DELETE FROM auth.users WHERE id = $1")
+                    .bind(user_id)
+                    .execute(&state.db_pool)
+                    .await;
+                return (StatusCode::BAD_REQUEST, Json("Öğrenci kaydı için gelir düzeyi gerekli")).into_response();
+            }
+        };
+
+        if let Err(e) = sqlx::query(
+            "INSERT INTO students (profile_id, city, department, income_status) VALUES ($1, $2, $3, $4)",
+        )
+        .bind(user_id)
+        .bind(&city)
+        .bind(&department)
+        .bind(&income_status)
+        .execute(&state.db_pool)
+        .await
+        {
+            tracing::error!("Failed to create student after signup: {}", e);
+            let _ = sqlx::query("DELETE FROM profiles WHERE id = $1")
+                .bind(user_id)
+                .execute(&state.db_pool)
+                .await;
+            let _ = sqlx::query("DELETE FROM auth.users WHERE id = $1")
+                .bind(user_id)
+                .execute(&state.db_pool)
+                .await;
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(format!("Öğrenci kaydı oluşturulamadı: {}", e)),
+            )
+                .into_response();
+        }
+    }
+
+    (
+        StatusCode::CREATED,
+        Json(RegisterResponse {
+            id: user_id,
+            email: body.email,
+            role: body.role,
+            message: "Kayıt başarılı".to_string(),
+        }),
+    )
+        .into_response()
 }
 
 pub async fn get_profiles(State(state): State<AppState>) -> impl IntoResponse {

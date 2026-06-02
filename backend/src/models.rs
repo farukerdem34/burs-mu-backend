@@ -81,6 +81,24 @@ pub struct CreateStudentRequest {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct RegisterRequest {
+    pub email: String,
+    pub password: String,
+    pub role: UserRole,
+    pub city: Option<String>,
+    pub department: Option<String>,
+    pub income_status: Option<IncomeLevel>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RegisterResponse {
+    pub id: Uuid,
+    pub email: String,
+    pub role: UserRole,
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct CreateScholarshipRequest {
     pub donor_id: Option<Uuid>,
     pub title: String,

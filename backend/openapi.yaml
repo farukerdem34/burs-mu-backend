@@ -12,6 +12,32 @@ servers:
     description: Local development (direct)
 
 paths:
+  # ── Auth ────────────────────────────────────────────
+  /register:
+    post:
+      summary: Yeni kullanıcı kaydet
+      description: |
+        Supabase Auth üzerinden kullanıcı oluşturur, email'i otomatik onaylar
+        ve profiles tablosuna kaydı ekler.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Kullanıcı başarıyla oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterResponse"
+        "409":
+          description: Bu email zaten kayıtlı
+        "500":
+          description: Kullanıcı oluşturulamadı veya profil kaydedilemedi
+
   # ── Profiller ──────────────────────────────────────
   /profiles:
     get:
@@ -378,6 +404,48 @@ components:
           type: string
 
     # ── İstek Gövdeleri ─────────────────────────────
+    RegisterRequest:
+      type: object
+      required: [email, password, role]
+      properties:
+        email:
+          type: string
+          format: email
+          example: ogrenci@ornek.com
+        password:
+          type: string
+          minLength: 6
+          example: "GucluSifre123"
+        role:
+          $ref: "#/components/schemas/UserRole"
+        city:
+          type: string
+          description: "Rol 'student' ise zorunlu. Geçerli bir Türkiye şehri."
+          example: İstanbul
+        department:
+          type: string
+          description: "Rol 'student' ise zorunlu. Mevcut bir departman."
+          example: Bilgisayar Mühendisliği
+        income_status:
+          $ref: "#/components/schemas/IncomeLevel"
+          description: "Rol 'student' ise zorunlu."
+
+    RegisterResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Oluşturulan kullanıcının ID'si
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/UserRole"
+        message:
+          type: string
+          example: "Kayıt başarılı"
+
     CreateProfileRequest:
       type: object
       required: [id, role]

@@ -4,6 +4,8 @@ use std::env;
 pub struct AppConfig {
     pub database_url: String,
     pub server_port: u16,
+    pub supabase_url: String,
+    pub supabase_anon_key: String,
     pub weight_city: f32,
     pub weight_department: f32,
     pub weight_gpa: f32,
@@ -18,6 +20,9 @@ impl AppConfig {
                 .unwrap_or_else(|_| "8080".to_string())
                 .parse()
                 .expect("SERVER_PORT must be a valid port number"),
+            supabase_url: env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
+            supabase_anon_key: env::var("SUPABASE_ANON_KEY")
+                .expect("SUPABASE_ANON_KEY must be set"),
             weight_city: env::var("WEIGHT_CITY")
                 .unwrap_or_else(|_| "0.3".to_string())
                 .parse()
