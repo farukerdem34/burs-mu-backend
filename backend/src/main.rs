@@ -31,7 +31,7 @@ async fn main() {
         .route("/profiles/:id", get(handlers::get_profile))
         // STUDENTS
         .route("/students", post(handlers::create_student).get(handlers::get_students))
-        .route("/students/:profile_id", get(handlers::get_student))
+        .route("/students/:profile_id", get(handlers::get_student).put(handlers::update_student))
         // DONORS
         .route("/donors", get(handlers::get_donors))
         .route("/donors/:profile_id", get(handlers::get_donor))

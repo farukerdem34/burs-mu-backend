@@ -18,7 +18,8 @@ paths:
       summary: Yeni kullanıcı kaydet
       description: |
         Supabase Auth üzerinden kullanıcı oluşturur, email'i otomatik onaylar
-        ve profiles tablosuna kaydı ekler.
+        ve profiles tablosuna kaydı ekler. Öğrenciye ait alanlar (şehir, departman, GPA vb.)
+        kayıt sırasında istenmez; öğrenci bu bilgileri sonradan PUT /students/{profile_id} ile girebilir.
       tags: [Auth]
       requestBody:
         required: true
@@ -143,6 +144,36 @@ paths:
       responses:
         "200":
           description: Öğrenci bilgisi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          description: Öğrenci bulunamadı
+    put:
+      summary: Öğrenci profilini güncelle / oluştur
+      description: |
+        Öğrenci kendi profil bilgilerini güncelleyebilir.
+        İlk kez gönderimde öğrenci kaydı oluşturulur (şehir, departman, gelir düzeyi zorunlu).
+        Sonraki güncellemelerde sadece değiştirilmek istenen alanlar gönderilir.
+        Gönderilmeyen alanlar mevcut değerini korur.
+      tags: [Öğrenciler]
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStudentRequest"
+      responses:
+        "200":
+          description: Öğrenci başarıyla güncellendi
           content:
             application/json:
               schema:
@@ -395,6 +426,10 @@ components:
           type: string
         income_status:
           $ref: "#/components/schemas/IncomeLevel"
+        about:
+          type: string
+          nullable: true
+          description: Öğrencinin kendisi hakkında yazdığı metin
         created_at:
           type: string
           format: date-time
@@ -485,17 +520,6 @@ components:
           example: "GucluSifre123"
         role:
           $ref: "#/components/schemas/UserRole"
-        city:
-          type: string
-          description: "Rol 'student' ise zorunlu. Geçerli bir Türkiye şehri."
-          example: İstanbul
-        department:
-          type: string
-          description: "Rol 'student' ise zorunlu. Mevcut bir departman."
-          example: Bilgisayar Mühendisliği
-        income_status:
-          $ref: "#/components/schemas/IncomeLevel"
-          description: "Rol 'student' ise zorunlu."
 
     RegisterResponse:
       type: object
@@ -586,3 +610,27 @@ components:
             $ref: "#/components/schemas/IncomeLevel"
           nullable: true
           description: Boş veya null = tüm gelir düzeyleri
+
+    UpdateStudentRequest:
+      type: object
+      properties:
+        gpa:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          maximum: 4
+          description: Not ortalaması (gönderilmezse değişmez)
+        city:
+          type: string
+          description: "Türkiye şehri (yeni kayıtta zorunlu, sonraki güncellemelerde gönderilmezse değişmez)"
+        department:
+          type: string
+          description: "Departman (yeni kayıtta zorunlu, sonraki güncellemelerde gönderilmezse değişmez)"
+        income_status:
+          $ref: "#/components/schemas/IncomeLevel"
+          description: "Gelir düzeyi (yeni kayıtta zorunlu, sonraki güncellemelerde gönderilmezse değişmez)"
+        about:
+          type: string
+          nullable: true
+          description: "Hakkında metni (gönderilmezse değişmez)"

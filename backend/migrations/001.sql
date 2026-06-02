@@ -85,6 +85,7 @@ CREATE TABLE public.students (
     city TEXT NOT NULL REFERENCES public.cities(name),
     department TEXT NOT NULL REFERENCES public.departments(name),
     income_status income_level NOT NULL,
+    about TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

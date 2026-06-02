@@ -10,7 +10,7 @@ use crate::engine;
 use crate::models::{
     City, CreateProfileRequest, CreateScholarshipRequest, CreateStudentRequest, Department,
     Donor, IncomeLevelRow, MatchResult, Profile, RegisterRequest, RegisterResponse,
-    Scholarship, ScholarshipRule, Student, UserRoleRow,
+    Scholarship, ScholarshipRule, Student, UpdateStudentRequest, UserRoleRow,
 };
 use crate::state::AppState;
 
@@ -19,7 +19,7 @@ pub async fn match_student(
     Path(student_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let student = match sqlx::query_as::<_, Student>(
-        "SELECT profile_id, gpa::float4, city, department, income_status FROM students WHERE profile_id = $1",
+        "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students WHERE profile_id = $1",
     )
     .bind(student_id)
     .fetch_one(&state.db_pool)
@@ -195,85 +195,6 @@ pub async fn register(
             .into_response();
     }
 
-    // If student role, also insert into students table
-    if body.role == crate::models::UserRole::Student {
-        let city = match &body.city {
-            Some(c) => c.clone(),
-            None => {
-                let _ = sqlx::query("DELETE FROM profiles WHERE id = $1")
-                    .bind(user_id)
-                    .execute(&state.db_pool)
-                    .await;
-                let _ = sqlx::query("DELETE FROM auth.users WHERE id = $1")
-                    .bind(user_id)
-                    .execute(&state.db_pool)
-                    .await;
-                return (StatusCode::BAD_REQUEST, Json("Öğrenci kaydı için şehir gerekli")).into_response();
-            }
-        };
-        let department = match &body.department {
-            Some(d) => d.clone(),
-            None => {
-                let _ = sqlx::query("DELETE FROM profiles WHERE id = $1")
-                    .bind(user_id)
-                    .execute(&state.db_pool)
-                    .await;
-                let _ = sqlx::query("DELETE FROM auth.users WHERE id = $1")
-                    .bind(user_id)
-                    .execute(&state.db_pool)
-                    .await;
-                return (StatusCode::BAD_REQUEST, Json("Öğrenci kaydı için departman gerekli")).into_response();
-            }
-        };
-        let income_status = match &body.income_status {
-            Some(i) => i.clone(),
-            None => {
-                let _ = sqlx::query("DELETE FROM profiles WHERE id = $1")
-                    .bind(user_id)
-                    .execute(&state.db_pool)
-                    .await;
-                let _ = sqlx::query("DELETE FROM auth.users WHERE id = $1")
-                    .bind(user_id)
-                    .execute(&state.db_pool)
-                    .await;
-                return (StatusCode::BAD_REQUEST, Json("Öğrenci kaydı için gelir düzeyi gerekli")).into_response();
-            }
-        };
-
-        // Auto-insert department if it doesn't exist
-        let _ = sqlx::query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
-            .bind(&department)
-            .execute(&state.db_pool)
-            .await;
-
-        if let Err(e) = sqlx::query(
-            "INSERT INTO students (profile_id, city, department, income_status) VALUES ($1, $2, $3, $4)",
-        )
-        .bind(user_id)
-        .bind(&city)
-        .bind(&department)
-        .bind(&income_status)
-        .execute(&state.db_pool)
-        .await
-        {
-            tracing::error!("Failed to create student after signup: {}", e);
-            let _ = sqlx::query("DELETE FROM profiles WHERE id = $1")
-                .bind(user_id)
-                .execute(&state.db_pool)
-                .await;
-            let _ = sqlx::query("DELETE FROM auth.users WHERE id = $1")
-                .bind(user_id)
-                .execute(&state.db_pool)
-                .await;
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(format!("Öğrenci kaydı oluşturulamadı: {}", e)),
-            )
-                .into_response();
-        }
-    }
-
-    // If donor role, insert into donors table
     if body.role == crate::models::UserRole::Donor {
         if let Err(e) = sqlx::query(
             "INSERT INTO donors (profile_id, is_verified) VALUES ($1, FALSE)",
@@ -390,7 +311,7 @@ pub async fn create_student(
     {
         Ok(_) => {
             let student = sqlx::query_as::<_, Student>(
-                "SELECT profile_id, gpa::float4, city, department, income_status, created_at FROM students WHERE profile_id = $1",
+                "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students WHERE profile_id = $1",
             )
             .bind(body.profile_id)
             .fetch_one(&state.db_pool)
@@ -418,7 +339,7 @@ pub async fn create_student(
 
 pub async fn get_students(State(state): State<AppState>) -> impl IntoResponse {
     match sqlx::query_as::<_, Student>(
-        "SELECT profile_id, gpa::float4, city, department, income_status, created_at FROM students ORDER BY created_at DESC",
+        "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students ORDER BY created_at DESC",
     )
     .fetch_all(&state.db_pool)
     .await
@@ -440,7 +361,7 @@ pub async fn get_student(
     Path(profile_id): Path<Uuid>,
 ) -> impl IntoResponse {
     match sqlx::query_as::<_, Student>(
-        "SELECT profile_id, gpa::float4, city, department, income_status, created_at FROM students WHERE profile_id = $1",
+        "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students WHERE profile_id = $1",
     )
     .bind(profile_id)
     .fetch_one(&state.db_pool)
@@ -448,6 +369,74 @@ pub async fn get_student(
     {
         Ok(student) => (StatusCode::OK, Json(student)).into_response(),
         Err(_) => (StatusCode::NOT_FOUND, Json("Student not found")).into_response(),
+    }
+}
+
+pub async fn update_student(
+    State(state): State<AppState>,
+    Path(profile_id): Path<Uuid>,
+    Json(body): Json<UpdateStudentRequest>,
+) -> impl IntoResponse {
+    // Check if student record exists
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM students WHERE profile_id = $1)",
+    )
+    .bind(profile_id)
+    .fetch_one(&state.db_pool)
+    .await
+    .unwrap_or(false);
+
+    // On first creation, city, department, income_status are required
+    if !exists && (body.city.is_none() || body.department.is_none() || body.income_status.is_none()) {
+        return (StatusCode::BAD_REQUEST, Json("İlk kayıtta şehir, departman ve gelir düzeyi zorunludur")).into_response();
+    }
+
+    match sqlx::query(
+        r#"
+        INSERT INTO students (profile_id, gpa, city, department, income_status, about)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (profile_id) DO UPDATE SET
+            gpa = COALESCE($2, students.gpa),
+            city = COALESCE($3, students.city),
+            department = COALESCE($4, students.department),
+            income_status = COALESCE($5, students.income_status),
+            about = COALESCE($6, students.about)
+        "#,
+    )
+    .bind(profile_id)
+    .bind(body.gpa)
+    .bind(&body.city)
+    .bind(&body.department)
+    .bind(&body.income_status)
+    .bind(&body.about)
+    .execute(&state.db_pool)
+    .await
+    {
+        Ok(_) => {
+            let student = sqlx::query_as::<_, Student>(
+                "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students WHERE profile_id = $1",
+            )
+            .bind(profile_id)
+            .fetch_one(&state.db_pool)
+            .await;
+
+            match student {
+                Ok(s) => (StatusCode::OK, Json(s)).into_response(),
+                Err(_) => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json("Student updated but failed to fetch"),
+                )
+                    .into_response(),
+            }
+        }
+        Err(e) => {
+            tracing::error!("Failed to update student: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(format!("Failed to update student: {}", e)),
+            )
+                .into_response()
+        }
     }
 }
 

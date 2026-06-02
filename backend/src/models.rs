@@ -27,6 +27,7 @@ pub struct Student {
     pub city: String,
     pub department: String,
     pub income_status: IncomeLevel,
+    pub about: Option<String>,
     #[sqlx(default)]
     pub created_at: Option<DateTime<Utc>>,
 }
@@ -85,13 +86,19 @@ pub struct CreateStudentRequest {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct UpdateStudentRequest {
+    pub gpa: Option<f32>,
+    pub city: Option<String>,
+    pub department: Option<String>,
+    pub income_status: Option<IncomeLevel>,
+    pub about: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct RegisterRequest {
     pub email: String,
     pub password: String,
     pub role: UserRole,
-    pub city: Option<String>,
-    pub department: Option<String>,
-    pub income_status: Option<IncomeLevel>,
 }
 
 #[derive(Debug, Serialize)]
