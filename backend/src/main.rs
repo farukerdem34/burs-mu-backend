@@ -4,7 +4,7 @@ mod handlers;
 mod models;
 mod state;
 
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::Router;
 use std::net::SocketAddr;
 use tracing_subscriber;
@@ -21,6 +21,15 @@ async fn main() {
 
     let app = Router::new()
         .route("/match/:student_id", post(handlers::match_student))
+        // PROFILES
+        .route("/profiles", post(handlers::create_profile).get(handlers::get_profiles))
+        .route("/profiles/:id", get(handlers::get_profile))
+        // STUDENTS
+        .route("/students", post(handlers::create_student).get(handlers::get_students))
+        .route("/students/:profile_id", get(handlers::get_student))
+        // SCHOLARSHIPS
+        .route("/scholarships", post(handlers::create_scholarship).get(handlers::get_scholarships))
+        .route("/scholarships/:id", get(handlers::get_scholarship))
         .with_state(state);
 
     let addr: SocketAddr = format!("0.0.0.0:{}", server_port)
