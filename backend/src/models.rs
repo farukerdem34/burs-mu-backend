@@ -28,8 +28,13 @@ pub struct Student {
     pub department: String,
     pub income_status: IncomeLevel,
     #[sqlx(default)]
-    pub is_verified: Option<bool>,
-    #[sqlx(default)]
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, sqlx::FromRow)]
+pub struct Donor {
+    pub profile_id: Uuid,
+    pub is_verified: bool,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -77,7 +82,6 @@ pub struct CreateStudentRequest {
     pub city: String,
     pub department: String,
     pub income_status: IncomeLevel,
-    pub is_verified: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]

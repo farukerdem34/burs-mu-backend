@@ -1,0 +1,3 @@
+- kullanıcı kayıt işlemleri test edilecek
+- donor kayıt işlemleri test edilecek
+- genel endpointler test edilecek

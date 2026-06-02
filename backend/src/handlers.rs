@@ -9,8 +9,8 @@ use uuid::Uuid;
 use crate::engine;
 use crate::models::{
     City, CreateProfileRequest, CreateScholarshipRequest, CreateStudentRequest, Department,
-    IncomeLevelRow, MatchResult, Profile, RegisterRequest, RegisterResponse, Scholarship,
-    ScholarshipRule, Student, UserRoleRow,
+    Donor, IncomeLevelRow, MatchResult, Profile, RegisterRequest, RegisterResponse,
+    Scholarship, ScholarshipRule, Student, UserRoleRow,
 };
 use crate::state::AppState;
 
@@ -240,6 +240,12 @@ pub async fn register(
             }
         };
 
+        // Auto-insert department if it doesn't exist
+        let _ = sqlx::query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
+            .bind(&department)
+            .execute(&state.db_pool)
+            .await;
+
         if let Err(e) = sqlx::query(
             "INSERT INTO students (profile_id, city, department, income_status) VALUES ($1, $2, $3, $4)",
         )
@@ -262,6 +268,32 @@ pub async fn register(
             return (
                 StatusCode::BAD_REQUEST,
                 Json(format!("Öğrenci kaydı oluşturulamadı: {}", e)),
+            )
+                .into_response();
+        }
+    }
+
+    // If donor role, insert into donors table
+    if body.role == crate::models::UserRole::Donor {
+        if let Err(e) = sqlx::query(
+            "INSERT INTO donors (profile_id, is_verified) VALUES ($1, FALSE)",
+        )
+        .bind(user_id)
+        .execute(&state.db_pool)
+        .await
+        {
+            tracing::error!("Failed to create donor after signup: {}", e);
+            let _ = sqlx::query("DELETE FROM profiles WHERE id = $1")
+                .bind(user_id)
+                .execute(&state.db_pool)
+                .await;
+            let _ = sqlx::query("DELETE FROM auth.users WHERE id = $1")
+                .bind(user_id)
+                .execute(&state.db_pool)
+                .await;
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json("Donor kaydı oluşturulamadı, kayıt geri alındı"),
             )
                 .into_response();
         }
@@ -346,20 +378,19 @@ pub async fn create_student(
     }
 
     match sqlx::query(
-        "INSERT INTO students (profile_id, gpa, city, department, income_status, is_verified) VALUES ($1, $2, $3, $4, $5, $6)",
+        "INSERT INTO students (profile_id, gpa, city, department, income_status) VALUES ($1, $2, $3, $4, $5)",
     )
     .bind(body.profile_id)
     .bind(body.gpa)
     .bind(&body.city)
     .bind(&body.department)
     .bind(&body.income_status)
-    .bind(body.is_verified)
     .execute(&state.db_pool)
     .await
     {
         Ok(_) => {
             let student = sqlx::query_as::<_, Student>(
-                "SELECT profile_id, gpa::float4, city, department, income_status, is_verified, created_at FROM students WHERE profile_id = $1",
+                "SELECT profile_id, gpa::float4, city, department, income_status, created_at FROM students WHERE profile_id = $1",
             )
             .bind(body.profile_id)
             .fetch_one(&state.db_pool)
@@ -387,7 +418,7 @@ pub async fn create_student(
 
 pub async fn get_students(State(state): State<AppState>) -> impl IntoResponse {
     match sqlx::query_as::<_, Student>(
-        "SELECT profile_id, gpa::float4, city, department, income_status, is_verified, created_at FROM students ORDER BY created_at DESC",
+        "SELECT profile_id, gpa::float4, city, department, income_status, created_at FROM students ORDER BY created_at DESC",
     )
     .fetch_all(&state.db_pool)
     .await
@@ -409,7 +440,7 @@ pub async fn get_student(
     Path(profile_id): Path<Uuid>,
 ) -> impl IntoResponse {
     match sqlx::query_as::<_, Student>(
-        "SELECT profile_id, gpa::float4, city, department, income_status, is_verified, created_at FROM students WHERE profile_id = $1",
+        "SELECT profile_id, gpa::float4, city, department, income_status, created_at FROM students WHERE profile_id = $1",
     )
     .bind(profile_id)
     .fetch_one(&state.db_pool)
@@ -417,6 +448,81 @@ pub async fn get_student(
     {
         Ok(student) => (StatusCode::OK, Json(student)).into_response(),
         Err(_) => (StatusCode::NOT_FOUND, Json("Student not found")).into_response(),
+    }
+}
+
+// --- DONORS ---
+
+pub async fn get_donors(State(state): State<AppState>) -> impl IntoResponse {
+    match sqlx::query_as::<_, Donor>(
+        "SELECT profile_id, is_verified, created_at FROM donors ORDER BY created_at DESC",
+    )
+    .fetch_all(&state.db_pool)
+    .await
+    {
+        Ok(donors) => (StatusCode::OK, Json(donors)).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to fetch donors: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(format!("Failed to fetch donors: {}", e)),
+            )
+                .into_response()
+        }
+    }
+}
+
+pub async fn get_donor(
+    State(state): State<AppState>,
+    Path(profile_id): Path<Uuid>,
+) -> impl IntoResponse {
+    match sqlx::query_as::<_, Donor>(
+        "SELECT profile_id, is_verified, created_at FROM donors WHERE profile_id = $1",
+    )
+    .bind(profile_id)
+    .fetch_one(&state.db_pool)
+    .await
+    {
+        Ok(donor) => (StatusCode::OK, Json(donor)).into_response(),
+        Err(_) => (StatusCode::NOT_FOUND, Json("Donor not found")).into_response(),
+    }
+}
+
+pub async fn verify_donor(
+    State(state): State<AppState>,
+    Path(profile_id): Path<Uuid>,
+) -> impl IntoResponse {
+    match sqlx::query("UPDATE donors SET is_verified = TRUE WHERE profile_id = $1")
+        .bind(profile_id)
+        .execute(&state.db_pool)
+        .await
+    {
+        Ok(res) if res.rows_affected() > 0 => {
+            let donor = sqlx::query_as::<_, Donor>(
+                "SELECT profile_id, is_verified, created_at FROM donors WHERE profile_id = $1",
+            )
+            .bind(profile_id)
+            .fetch_one(&state.db_pool)
+            .await;
+
+            match donor {
+                Ok(d) => (StatusCode::OK, Json(d)).into_response(),
+                Err(_) => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json("Donor updated but failed to fetch"),
+                )
+                    .into_response(),
+            }
+        }
+        Ok(_) => (StatusCode::NOT_FOUND, Json("Donor not found")).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to verify donor: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(format!("Failed to verify donor: {}", e)),
+            )
+                .into_response()
+        }
     }
 }
 

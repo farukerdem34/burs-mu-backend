@@ -85,7 +85,6 @@ CREATE TABLE public.students (
     city TEXT NOT NULL REFERENCES public.cities(name),
     department TEXT NOT NULL REFERENCES public.departments(name),
     income_status income_level NOT NULL,
-    is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -100,7 +99,17 @@ $$ LANGUAGE sql;
 ALTER TABLE public.students ADD CONSTRAINT students_income_status_check CHECK (check_income_level(income_status));
 
 
--- 5. SCHOLARSHIPS
+-- 5. DONORS
+CREATE TABLE public.donors (
+    profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE PRIMARY KEY,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.donors ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Everyone can read donors" ON public.donors FOR SELECT USING (true);
+
+-- 6. SCHOLARSHIPS
 CREATE TABLE public.scholarships (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     donor_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -140,7 +149,7 @@ ALTER TABLE public.scholarships ADD CONSTRAINT scholarships_target_departments_c
 ALTER TABLE public.scholarships ADD CONSTRAINT scholarships_target_income_levels_check CHECK (check_income_levels(target_income_levels));
 
 
--- 6. MATCHES
+-- 7. MATCHES
 CREATE TABLE public.matches (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     scholarship_id UUID REFERENCES public.scholarships(id) ON DELETE CASCADE,
@@ -153,7 +162,7 @@ CREATE TABLE public.matches (
 ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
 
 
--- 7. INDEXES
+-- 8. INDEXES
 CREATE INDEX idx_students_city ON public.students(city);
 CREATE INDEX idx_students_department ON public.students(department);
 CREATE INDEX idx_students_income ON public.students(income_status);
@@ -161,7 +170,7 @@ CREATE INDEX idx_scholarships_cities ON public.scholarships USING GIN (target_ci
 CREATE INDEX idx_scholarships_departments ON public.scholarships USING GIN (target_departments);
 
 
--- 8. SEED DATA
+-- 9. SEED DATA
 
 -- Auth users
 INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
@@ -186,9 +195,14 @@ INSERT INTO public.departments (name) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- Students
-INSERT INTO public.students (profile_id, gpa, city, department, income_status, is_verified) VALUES
-('00000000-0000-0000-0000-000000000001', 3.50, 'İstanbul', 'Bilgisayar Mühendisliği', 'low', TRUE),
-('00000000-0000-0000-0000-000000000002', 2.80, 'Ankara', 'Elektrik Mühendisliği', 'medium', TRUE)
+INSERT INTO public.students (profile_id, gpa, city, department, income_status) VALUES
+('00000000-0000-0000-0000-000000000001', 3.50, 'İstanbul', 'Bilgisayar Mühendisliği', 'low'),
+('00000000-0000-0000-0000-000000000002', 2.80, 'Ankara', 'Elektrik Mühendisliği', 'medium')
+ON CONFLICT (profile_id) DO NOTHING;
+
+-- Donors
+INSERT INTO public.donors (profile_id, is_verified) VALUES
+('00000000-0000-0000-0000-000000000003', TRUE)
 ON CONFLICT (profile_id) DO NOTHING;
 
 -- Scholarships

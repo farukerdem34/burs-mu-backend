@@ -150,6 +150,63 @@ paths:
         "404":
           description: Öğrenci bulunamadı
 
+  # ── Donorlar ───────────────────────────────────────
+  /donors:
+    get:
+      summary: Tüm donorları listele
+      tags: [Donorlar]
+      responses:
+        "200":
+          description: Donor listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Donor"
+
+  /donors/{profile_id}:
+    get:
+      summary: Profile ID'ye göre donor getir
+      tags: [Donorlar]
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Donor bilgisi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Donor"
+        "404":
+          description: Donor bulunamadı
+
+  /donors/{profile_id}/verify:
+    post:
+      summary: Donoru yönetici onayı ile doğrula
+      tags: [Donorlar]
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Donor başarıyla doğrulandı
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Donor"
+        "404":
+          description: Donor bulunamadı
+
   # ── Burslar ────────────────────────────────────────
   /scholarships:
     get:
@@ -338,9 +395,19 @@ components:
           type: string
         income_status:
           $ref: "#/components/schemas/IncomeLevel"
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Donor:
+      type: object
+      properties:
+        profile_id:
+          type: string
+          format: uuid
         is_verified:
           type: boolean
-          nullable: true
         created_at:
           type: string
           format: date-time
@@ -478,9 +545,6 @@ components:
           description: Mevcut bir departman (FK)
         income_status:
           $ref: "#/components/schemas/IncomeLevel"
-        is_verified:
-          type: boolean
-          nullable: true
 
     CreateScholarshipRequest:
       type: object
