@@ -1,0 +1,456 @@
+openapi: "3.0.3"
+info:
+  title: Burs Eşleştirme Sistemi API
+  description: |
+    Backend API for the scholarship matching system.
+    All endpoints return JSON. Date fields are ISO 8601.
+  version: "1.0.0"
+servers:
+  - url: http://host.docker.internal:8080
+    description: Local development (Docker)
+  - url: http://localhost:8080
+    description: Local development (direct)
+
+paths:
+  # ── Profiller ──────────────────────────────────────
+  /profiles:
+    get:
+      summary: Tüm profilleri listele
+      tags: [Profiller]
+      responses:
+        "200":
+          description: Profil listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Profile"
+    post:
+      summary: Yeni profil oluştur
+      tags: [Profiller]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProfileRequest"
+      responses:
+        "201":
+          description: Profil oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          description: Geçersiz rol
+        "422":
+          description: Doğrulama hatası
+
+  /profiles/{id}:
+    get:
+      summary: ID'ye göre profil getir
+      tags: [Profiller]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Profil bilgisi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "404":
+          description: Profil bulunamadı
+
+  # ── Öğrenciler ─────────────────────────────────────
+  /students:
+    get:
+      summary: Tüm öğrencileri listele
+      tags: [Öğrenciler]
+      responses:
+        "200":
+          description: Öğrenci listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+    post:
+      summary: Yeni öğrenci oluştur
+      tags: [Öğrenciler]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStudentRequest"
+      responses:
+        "201":
+          description: Öğrenci oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "400":
+          description: Geçersiz şehir veya departman
+        "422":
+          description: Doğrulama hatası
+
+  /students/{profile_id}:
+    get:
+      summary: Profile ID'ye göre öğrenci getir
+      tags: [Öğrenciler]
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Öğrenci bilgisi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          description: Öğrenci bulunamadı
+
+  # ── Burslar ────────────────────────────────────────
+  /scholarships:
+    get:
+      summary: Tüm bursları listele
+      tags: [Burslar]
+      responses:
+        "200":
+          description: Burs listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Scholarship"
+    post:
+      summary: Yeni burs oluştur
+      tags: [Burslar]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScholarshipRequest"
+      responses:
+        "201":
+          description: Burs oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scholarship"
+        "400":
+          description: Geçersiz şehir, departman veya gelir düzeyi
+        "422":
+          description: Doğrulama hatası
+
+  /scholarships/{id}:
+    get:
+      summary: ID'ye göre burs getir
+      tags: [Burslar]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Burs bilgisi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scholarship"
+        "404":
+          description: Burs bulunamadı
+
+  # ── Eşleştirme ─────────────────────────────────────
+  /match/{student_id}:
+    post:
+      summary: Öğrenciyi aktif burslarla eşleştir
+      tags: [Eşleştirme]
+      parameters:
+        - name: student_id
+          in: path
+          required: true
+          description: Öğrencinin profile_id'si
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Skorlanmış eşleşme sonuçları (büyükten küçüğe)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchResult"
+        "404":
+          description: Öğrenci bulunamadı
+
+  # ── Referans Tabloları ─────────────────────────────
+  /cities:
+    get:
+      summary: Tüm Türkiye şehirlerini listele (alfabetik)
+      tags: [Referanslar]
+      responses:
+        "200":
+          description: Şehir listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NamedItem"
+
+  /departments:
+    get:
+      summary: Tüm departmanları listele (alfabetik)
+      tags: [Referanslar]
+      responses:
+        "200":
+          description: Departman listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NamedItem"
+
+  /income-levels:
+    get:
+      summary: Gelir düzeylerini listele
+      tags: [Referanslar]
+      responses:
+        "200":
+          description: Gelir düzeyi listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NamedItem"
+
+  /user-roles:
+    get:
+      summary: Kullanıcı rollerini listele
+      tags: [Referanslar]
+      responses:
+        "200":
+          description: Rol listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NamedItem"
+
+components:
+  schemas:
+    # ── Temel Tipler ────────────────────────────────
+    UserRole:
+      type: string
+      enum: [student, donor]
+      description: Kullanıcı rolü
+
+    IncomeLevel:
+      type: string
+      enum: [low, medium, high]
+      description: Gelir düzeyi
+
+    # ── Nesneler ─────────────────────────────────────
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/UserRole"
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Student:
+      type: object
+      properties:
+        profile_id:
+          type: string
+          format: uuid
+        gpa:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          maximum: 4
+        city:
+          type: string
+          description: Türkiye şehri
+        department:
+          type: string
+        income_status:
+          $ref: "#/components/schemas/IncomeLevel"
+        is_verified:
+          type: boolean
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Scholarship:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        donor_id:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        quota:
+          type: integer
+        is_active:
+          type: boolean
+          nullable: true
+        min_gpa:
+          type: number
+          format: float
+          nullable: true
+        target_cities:
+          type: array
+          items:
+            type: string
+          description: Boş array = tüm şehirler
+        target_departments:
+          type: array
+          items:
+            type: string
+          description: Boş array = tüm departmanlar
+        target_income_levels:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomeLevel"
+          description: Boş array = tüm gelir düzeyleri
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    MatchResult:
+      type: object
+      properties:
+        scholarship_id:
+          type: string
+          format: uuid
+        score:
+          type: number
+          format: float
+
+    NamedItem:
+      type: object
+      properties:
+        name:
+          type: string
+
+    # ── İstek Gövdeleri ─────────────────────────────
+    CreateProfileRequest:
+      type: object
+      required: [id, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Auth kullanıcı ID'si ile aynı olmalı
+        role:
+          $ref: "#/components/schemas/UserRole"
+
+    CreateStudentRequest:
+      type: object
+      required: [profile_id, city, department, income_status]
+      properties:
+        profile_id:
+          type: string
+          format: uuid
+        gpa:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          maximum: 4
+        city:
+          type: string
+          description: Geçerli bir Türkiye şehri
+        department:
+          type: string
+          description: Mevcut bir departman (FK)
+        income_status:
+          $ref: "#/components/schemas/IncomeLevel"
+        is_verified:
+          type: boolean
+          nullable: true
+
+    CreateScholarshipRequest:
+      type: object
+      required: [title]
+      properties:
+        donor_id:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        quota:
+          type: integer
+          nullable: true
+          default: 1
+        is_active:
+          type: boolean
+          nullable: true
+          default: true
+        min_gpa:
+          type: number
+          format: float
+          nullable: true
+        target_cities:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Boş veya null = tüm şehirler. Yeni departmanlar otomatik eklenir.
+        target_departments:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Boş veya null = tüm departmanlar
+        target_income_levels:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomeLevel"
+          nullable: true
+          description: Boş veya null = tüm gelir düzeyleri

@@ -7,6 +7,7 @@ mod state;
 use axum::routing::{get, post};
 use axum::Router;
 use std::net::SocketAddr;
+use tower_http::cors::CorsLayer;
 use tracing_subscriber;
 
 #[tokio::main]
@@ -18,6 +19,8 @@ async fn main() {
     let config = config::AppConfig::from_env();
     let server_port = config.server_port;
     let state = state::AppState::new(config).await;
+
+    let cors = CorsLayer::permissive();
 
     let app = Router::new()
         .route("/match/:student_id", post(handlers::match_student))
@@ -35,6 +38,7 @@ async fn main() {
         .route("/departments", get(handlers::get_departments))
         .route("/income-levels", get(handlers::get_income_levels))
         .route("/user-roles", get(handlers::get_user_roles))
+        .layer(cors)
         .with_state(state);
 
     let addr: SocketAddr = format!("0.0.0.0:{}", server_port)
