@@ -35,10 +35,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RegisterResponse"
+        "400":
+          description: Yönetici kaydı yapılamaz
         "409":
           description: Bu email zaten kayıtlı
         "500":
           description: Kullanıcı oluşturulamadı veya profil kaydedilemedi
+
+  /login:
+    post:
+      summary: Kullanıcı girişi
+      description: |
+        Email ve şifre ile giriş yapar. Supabase auth.users tablosunda
+        crypt() doğrulaması yapılır. Başarılı girişte profil UUID'si döner.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Giriş başarılı
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: E-posta veya şifre hatalı
+        "500":
+          description: Giriş yapılamadı
 
   # ── Profiller ──────────────────────────────────────
   /profiles:
@@ -71,7 +98,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Profile"
         "400":
-          description: Geçersiz rol
+          description: Geçersiz rol veya yönetici profili oluşturulamaz
         "422":
           description: Doğrulama hatası
 
@@ -113,6 +140,8 @@ paths:
     post:
       summary: Yeni öğrenci oluştur
       tags: [Öğrenciler]
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -128,8 +157,8 @@ paths:
                 $ref: "#/components/schemas/Student"
         "400":
           description: Geçersiz şehir veya departman
-        "422":
-          description: Doğrulama hatası
+        "403":
+          description: Kendi hesabınızı düzenleyebilirsiniz
 
   /students/{profile_id}:
     get:
@@ -152,13 +181,14 @@ paths:
         "404":
           description: Öğrenci bulunamadı
     put:
-      summary: Öğrenci profilini güncelle / oluştur
+      summary: Öğrenci profilini güncelle
       description: |
         Öğrenci kendi profil bilgilerini güncelleyebilir.
-        İlk kez gönderimde öğrenci kaydı oluşturulur (şehir, departman, gelir düzeyi zorunlu).
-        Sonraki güncellemelerde sadece değiştirilmek istenen alanlar gönderilir.
+        Varolan kayıt güncellenir; kayıt yoksa INSERT yapılır.
         Gönderilmeyen alanlar mevcut değerini korur.
       tags: [Öğrenciler]
+      security:
+        - BearerAuth: []
       parameters:
         - name: profile_id
           in: path
@@ -179,6 +209,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Student"
+        "403":
+          description: Kendi hesabınızı düzenleyebilirsiniz
         "404":
           description: Öğrenci bulunamadı
 
@@ -222,6 +254,8 @@ paths:
     post:
       summary: Donoru yönetici onayı ile doğrula
       tags: [Donorlar]
+      security:
+        - BearerAuth: []
       parameters:
         - name: profile_id
           in: path
@@ -236,6 +270,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Donor"
+        "403":
+          description: Sadece yöneticiler burs verenleri onaylayabilir
         "404":
           description: Donor bulunamadı
 
@@ -256,6 +292,8 @@ paths:
     post:
       summary: Yeni burs oluştur
       tags: [Burslar]
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -271,8 +309,8 @@ paths:
                 $ref: "#/components/schemas/Scholarship"
         "400":
           description: Geçersiz şehir, departman veya gelir düzeyi
-        "422":
-          description: Doğrulama hatası
+        "403":
+          description: Sadece burs verenler burs oluşturabilir
 
   /scholarships/{id}:
     get:
@@ -318,7 +356,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/MatchResult"
         "404":
-          description: Öğrenci bulunamadı
+          description: Öğrenci bulunamadı (boş dizi döner)
 
   # ── Referans Tabloları ─────────────────────────────
   /cities:
@@ -356,6 +394,8 @@ paths:
         Departmanı ve ona bağlı öğrenci kayıtlarını siler,
         ayrıca bursların target_departments array'inden kaldırır.
       tags: [Referanslar]
+      security:
+        - BearerAuth: []
       parameters:
         - name: name
           in: path
@@ -370,6 +410,10 @@ paths:
               schema:
                 type: string
                 example: "Department 'asd' deleted"
+        "401":
+          description: Geçersiz veya eksik token
+        "403":
+          description: Sadece yöneticiler departman silebilir
         "404":
           description: Departman bulunamadı
 
@@ -402,11 +446,19 @@ paths:
                   $ref: "#/components/schemas/NamedItem"
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Authorization: Bearer `<uuid>` — profile UUID returned by
+        `/register` or `/login`. No JWT, no expiry. The UUID must
+        exist in the `profiles` table.
   schemas:
     # ── Temel Tipler ────────────────────────────────
     UserRole:
       type: string
-      enum: [student, donor]
+      enum: [student, donor, admin]
       description: Kullanıcı rolü
 
     IncomeLevel:
@@ -524,6 +576,32 @@ components:
           type: number
           format: float
 
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: ogrenci@ornek.com
+        password:
+          type: string
+          minLength: 6
+          example: GucluSifre123
+
+    LoginResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Kullanıcının profil ID'si
+        role:
+          $ref: "#/components/schemas/UserRole"
+        message:
+          type: string
+          example: "Giriş başarılı"
+
     NamedItem:
       type: object
       properties:
@@ -640,7 +718,7 @@ components:
           items:
             type: string
           nullable: true
-          description: Boş veya null = tüm şehirler. Yeni departmanlar otomatik eklenir.
+          description: Boş veya null = tüm şehirler. Yeni şehirler otomatik eklenir.
         target_departments:
           type: array
           items:

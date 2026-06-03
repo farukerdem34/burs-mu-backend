@@ -664,7 +664,7 @@ pub async fn create_scholarship(
     }
 
     match sqlx::query(
-        "INSERT INTO scholarships (donor_id, title, quota, is_active, min_gpa, target_cities, target_departments, target_income_levels) VALUES ($1, $2, $3, COALESCE($4, true), $5, $6, $7, $8)",
+        "INSERT INTO scholarships (donor_id, title, quota, is_active, min_gpa, target_cities, target_departments, target_income_levels) VALUES ($1, $2, COALESCE($3, 1), COALESCE($4, true), $5, $6, $7, $8)",
     )
     .bind(donor_id)
     .bind(&body.title)
