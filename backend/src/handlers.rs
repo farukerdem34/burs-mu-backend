@@ -6,11 +6,13 @@ use axum::{
 };
 use uuid::Uuid;
 
+use crate::auth::AuthUser;
 use crate::engine;
 use crate::models::{
     City, CreateProfileRequest, CreateScholarshipRequest, CreateStudentRequest, Department,
-    Donor, IncomeLevelRow, MatchResult, Profile, RegisterRequest, RegisterResponse,
-    Scholarship, ScholarshipRule, Student, UpdateStudentRequest, UserRoleRow,
+    Donor, IncomeLevelRow, LoginRequest, LoginResponse, MatchResult, Profile, RegisterRequest,
+    RegisterResponse, Scholarship, ScholarshipRule, Student, UpdateStudentRequest, UserRole,
+    UserRoleRow,
 };
 use crate::state::AppState;
 
@@ -77,12 +79,68 @@ pub async fn match_student(
     (StatusCode::OK, Json(results)).into_response()
 }
 
+// --- AUTH ---
+
+pub async fn login(
+    State(state): State<AppState>,
+    Json(body): Json<LoginRequest>,
+) -> impl IntoResponse {
+    let result = sqlx::query_as::<_, (Uuid,)>(
+        r#"
+        SELECT id FROM auth.users
+        WHERE email = $1 AND encrypted_password = crypt($2, encrypted_password)
+        "#,
+    )
+    .bind(&body.email)
+    .bind(&body.password)
+    .fetch_optional(&state.db_pool)
+    .await;
+
+    let (user_id,) = match result {
+        Ok(Some(id)) => id,
+        Ok(None) => {
+            return (StatusCode::UNAUTHORIZED, Json("E-posta veya şifre hatalı")).into_response();
+        }
+        Err(e) => {
+            tracing::error!("Login error: {}", e);
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json("Giriş yapılamadı")).into_response();
+        }
+    };
+
+    let profile = sqlx::query_as::<_, (Uuid, UserRole)>(
+        "SELECT id, role FROM profiles WHERE id = $1",
+    )
+    .bind(user_id)
+    .fetch_one(&state.db_pool)
+    .await;
+
+    match profile {
+        Ok((id, role)) => (
+            StatusCode::OK,
+            Json(LoginResponse {
+                id,
+                role,
+                message: "Giriş başarılı".to_string(),
+            }),
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::error!("Login profile fetch error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json("Profil bilgisi alınamadı")).into_response()
+        }
+    }
+}
+
 // --- PROFILES ---
 
 pub async fn create_profile(
     State(state): State<AppState>,
     Json(body): Json<CreateProfileRequest>,
 ) -> impl IntoResponse {
+    if body.role == UserRole::Admin {
+        return (StatusCode::BAD_REQUEST, Json("Yönetici profili oluşturulamaz")).into_response();
+    }
+
     match sqlx::query(
         "INSERT INTO profiles (id, role) VALUES ($1, $2)",
     )
@@ -123,6 +181,10 @@ pub async fn register(
     State(state): State<AppState>,
     Json(body): Json<RegisterRequest>,
 ) -> impl IntoResponse {
+    if body.role == UserRole::Admin {
+        return (StatusCode::BAD_REQUEST, Json("Yönetici kaydı yapılamaz")).into_response();
+    }
+
     // Check if email already exists
     let exists: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM auth.users WHERE email = $1)",
@@ -318,8 +380,17 @@ async fn validate_cities(state: &AppState, cities: &[String]) -> Result<(), Stri
 
 pub async fn create_student(
     State(state): State<AppState>,
+    auth: AuthUser,
     Json(body): Json<CreateStudentRequest>,
 ) -> impl IntoResponse {
+    if auth.id != body.profile_id && auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Kendi hesabınızı düzenleyebilirsiniz"),
+        )
+            .into_response();
+    }
+
     if let Err(msg) = validate_city(&state, &body.city).await {
         return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
     }
@@ -400,21 +471,16 @@ pub async fn get_student(
 
 pub async fn update_student(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(profile_id): Path<Uuid>,
     Json(body): Json<UpdateStudentRequest>,
 ) -> impl IntoResponse {
-    // Check if student record exists
-    let exists: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM students WHERE profile_id = $1)",
-    )
-    .bind(profile_id)
-    .fetch_one(&state.db_pool)
-    .await
-    .unwrap_or(false);
-
-    // On first creation, city, department, income_status are required
-    if !exists && (body.city.is_none() || body.department.is_none() || body.income_status.is_none()) {
-        return (StatusCode::BAD_REQUEST, Json("İlk kayıtta şehir, departman ve gelir düzeyi zorunludur")).into_response();
+    if auth.id != profile_id && auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Kendi hesabınızı düzenleyebilirsiniz"),
+        )
+            .into_response();
     }
 
     if let Some(ref department) = body.department {
@@ -424,52 +490,55 @@ pub async fn update_student(
             .await;
     }
 
-    match sqlx::query(
-        r#"
-        INSERT INTO students (profile_id, gpa, city, department, income_status, about)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (profile_id) DO UPDATE SET
-            gpa = COALESCE($2, students.gpa),
-            city = COALESCE($3, students.city),
-            department = COALESCE($4, students.department),
-            income_status = COALESCE($5, students.income_status),
-            about = COALESCE($6, students.about)
-        "#,
+    let updated = sqlx::query(
+        "UPDATE students SET gpa = COALESCE($1, gpa), city = COALESCE($2, city), department = COALESCE($3, department), income_status = COALESCE($4, income_status), about = COALESCE($5, about) WHERE profile_id = $6",
     )
-    .bind(profile_id)
     .bind(body.gpa)
     .bind(&body.city)
     .bind(&body.department)
     .bind(&body.income_status)
     .bind(&body.about)
+    .bind(profile_id)
     .execute(&state.db_pool)
-    .await
-    {
-        Ok(_) => {
-            let student = sqlx::query_as::<_, Student>(
-                "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students WHERE profile_id = $1",
+    .await;
+
+    match updated {
+        Ok(res) if res.rows_affected() > 0 => {
+            // updated existing row
+        }
+        _ => {
+            // no row to update → insert new
+            if body.city.is_none() || body.department.is_none() || body.income_status.is_none() {
+                return (StatusCode::BAD_REQUEST, Json("İlk kayıtta şehir, departman ve gelir düzeyi zorunludur")).into_response();
+            }
+            if let Err(e) = sqlx::query(
+                "INSERT INTO students (profile_id, gpa, city, department, income_status, about) VALUES ($1, $2, $3, $4, $5, $6)",
             )
             .bind(profile_id)
-            .fetch_one(&state.db_pool)
-            .await;
-
-            match student {
-                Ok(s) => (StatusCode::OK, Json(s)).into_response(),
-                Err(_) => (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json("Student updated but failed to fetch"),
-                )
-                    .into_response(),
+            .bind(body.gpa)
+            .bind(body.city.as_deref())
+            .bind(body.department.as_deref())
+            .bind(&body.income_status)
+            .bind(&body.about)
+            .execute(&state.db_pool)
+            .await
+            {
+                tracing::error!("Failed to insert student: {}", e);
+                return (StatusCode::INTERNAL_SERVER_ERROR, Json(format!("Failed to create student: {}", e))).into_response();
             }
         }
-        Err(e) => {
-            tracing::error!("Failed to update student: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(format!("Failed to update student: {}", e)),
-            )
-                .into_response()
-        }
+    };
+
+    let student = sqlx::query_as::<_, Student>(
+        "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students WHERE profile_id = $1",
+    )
+    .bind(profile_id)
+    .fetch_one(&state.db_pool)
+    .await;
+
+    match student {
+        Ok(s) => (StatusCode::OK, Json(s)).into_response(),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json("Student updated but failed to fetch")).into_response(),
     }
 }
 
@@ -512,8 +581,17 @@ pub async fn get_donor(
 
 pub async fn verify_donor(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(profile_id): Path<Uuid>,
 ) -> impl IntoResponse {
+    if auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Sadece yöneticiler burs verenleri onaylayabilir"),
+        )
+            .into_response();
+    }
+
     match sqlx::query("UPDATE donors SET is_verified = TRUE WHERE profile_id = $1")
         .bind(profile_id)
         .execute(&state.db_pool)
@@ -552,8 +630,19 @@ pub async fn verify_donor(
 
 pub async fn create_scholarship(
     State(state): State<AppState>,
+    auth: AuthUser,
     Json(body): Json<CreateScholarshipRequest>,
 ) -> impl IntoResponse {
+    if auth.role != UserRole::Donor && auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Sadece burs verenler burs oluşturabilir"),
+        )
+            .into_response();
+    }
+
+    let donor_id = auth.id;
+
     if let Some(ref cities) = body.target_cities {
         if !cities.is_empty() {
             if let Err(msg) = validate_cities(&state, cities).await {
@@ -575,9 +664,9 @@ pub async fn create_scholarship(
     }
 
     match sqlx::query(
-        "INSERT INTO scholarships (donor_id, title, quota, is_active, min_gpa, target_cities, target_departments, target_income_levels) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        "INSERT INTO scholarships (donor_id, title, quota, is_active, min_gpa, target_cities, target_departments, target_income_levels) VALUES ($1, $2, $3, COALESCE($4, true), $5, $6, $7, $8)",
     )
-    .bind(body.donor_id)
+    .bind(donor_id)
     .bind(&body.title)
     .bind(body.quota)
     .bind(body.is_active)
@@ -589,7 +678,7 @@ pub async fn create_scholarship(
     .await
     {
         Ok(res) => {
-            tracing::info!("create_scholarship: rows_affected={:?}, donor_id={:?}, title={:?}", res.rows_affected(), body.donor_id, body.title);
+            tracing::info!("create_scholarship: rows_affected={:?}, donor_id={:?}, title={:?}", res.rows_affected(), donor_id, body.title);
             // Fetch back by title + donor_id since we have no id yet
             let scholarship = sqlx::query_as::<_, Scholarship>(
                 "SELECT id, donor_id, title, quota, is_active, min_gpa::float4, target_cities, target_departments, target_income_levels, created_at FROM scholarships WHERE title = $1 ORDER BY created_at DESC LIMIT 1",
@@ -728,8 +817,17 @@ pub async fn get_departments(State(state): State<AppState>) -> impl IntoResponse
 
 pub async fn delete_department(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(name): Path<String>,
 ) -> impl IntoResponse {
+    if auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Sadece yöneticiler departman silebilir"),
+        )
+            .into_response();
+    }
+
     let mut tx = match state.db_pool.begin().await {
         Ok(tx) => tx,
         Err(e) => {

@@ -18,6 +18,7 @@ pub enum IncomeLevel {
 pub enum UserRole {
     Student,
     Donor,
+    Admin,
 }
 
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
@@ -115,6 +116,7 @@ pub struct RegisterResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateScholarshipRequest {
+    #[allow(dead_code)]
     pub donor_id: Option<Uuid>,
     pub title: String,
     pub quota: Option<i32>,
@@ -143,6 +145,19 @@ pub struct IncomeLevelRow {
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct UserRoleRow {
     pub name: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LoginRequest {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct LoginResponse {
+    pub id: Uuid,
+    pub role: UserRole,
+    pub message: String,
 }
 
 #[derive(Debug, Serialize)]

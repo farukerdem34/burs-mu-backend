@@ -2,19 +2,20 @@
 
 ## Stack
 - **Rust** (edition 2021, not 2024) + **Axum 0.7** + **sqlx 0.8** (PostgreSQL)
-- **Supabase** for Postgres + auth.users table
-- Skills loaded: `supabase`, `supabase-postgres-best-practices` (`backend/.agents/skills/`)
+- **Supabase** for Postgres + `auth.users` table
+- Skills: `supabase`, `supabase-postgres-best-practices` (`backend/.agents/skills/`)
 
 ## Structure
 ```
-backend/          # All application code (monorepo root is just .serena/ + backend/)
+backend/          # All Rust code
   src/
-    main.rs       # Entrypoint, router setup, TcpListener
-    config.rs     # AppConfig::from_env() — panics on missing DATABASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY
+    main.rs       # Entrypoint, router, TcpListener
+    auth.rs       # AuthUser extractor: reads Authorization: Bearer <uuid>, looks up profiles table
+    config.rs     # AppConfig::from_env() — panics if DATABASE_URL, SUPABASE_URL, or SUPABASE_ANON_KEY missing
     state.rs      # AppState { db_pool: PgPool, config: AppConfig }
     models.rs     # Student, Donor, Profile, Scholarship, ScholarshipRule + request/response types
     engine.rs     # calculate_match_score() — elimination then weighted scoring
-    handlers.rs   # All route handlers (~800 lines)
+    handlers.rs   # All route handlers (~920 lines)
   migrations/001.sql   # Full schema + seed data
   Cargo.toml
   Cargo.lock
@@ -28,38 +29,43 @@ backend/          # All application code (monorepo root is just .serena/ + backe
 | Swagger UI | `docker compose up` serves at `http://localhost:8081` |
 | Build | `cargo build` (in `backend/`) |
 
-## Key conventions
-- **No tests exist** — `todo.md` lists pending test tasks. No test framework configured.
-- **Auth**: Registration goes through raw `auth.users` table with `crypt()/gen_salt('bf')`, email auto-confirmed. No JWT middleware.
+## Auth (critical — non-standard)
+- **No JWT, no session, no real tokens.** `Authorization: Bearer <uuid>` where `<uuid>` is the user's profile UUID returned by `POST /login` or `POST /register`.
+- Login at `POST /login` checks `auth.users` via `crypt()` and returns `{ id, role }`.
+- `AuthUser` extractor (`auth.rs:20`) parses the Bearer token as a UUID and verifies it exists in `profiles` table. No signature, expiry, or refresh.
+- Some handlers use `auth: AuthUser` for authorization (create_student, update_student, create_scholarship, verify_donor, delete_department). Others are unprotected.
+- The `register` handler (not `AuthUser`-guarded) creates user in `auth.users` with `crypt()/gen_salt('bf')`, creates profile, and optionally creates student/donor record.
+
+## API routes
+| Method | Path | Auth? |
+|---|---|---|
+| POST | `/register` | No |
+| POST | `/login` | No |
+| POST | `/match/:student_id` | No |
+| POST/GET | `/profiles` | No |
+| GET | `/profiles/:id` | No |
+| POST/GET | `/students` | Yes (POST) / No (GET) |
+| GET/PUT | `/students/:profile_id` | Yes (PUT) / No (GET) |
+| GET | `/donors` | No |
+| GET | `/donors/:profile_id` | No |
+| POST | `/donors/:profile_id/verify` | Yes (Admin only) |
+| POST/GET | `/scholarships` | Yes (POST) / No (GET) |
+| GET | `/scholarships/:id` | No |
+| GET | `/cities` | No |
+| GET | `/departments` | No |
+| DELETE | `/departments/:name` | Yes (Admin only) |
+| GET | `/income-levels` | No |
+| GET | `/user-roles` | No |
+
+## Key conventions & gotchas
+- **No tests exist** — `todo.md` lists manual testing tasks. No test framework configured.
 - **CORS**: `CorsLayer::permissive()` — wide open.
 - **Connection pool**: `PgPoolOptions` with 1-5 connections, `test_before_acquire(false)`.
-- **Scoring engine**: Empty target arrays (`[]`) = no filter (all pass). Elimination checks `is_empty()` to distinguish "no filter" from actual values. GPA minimum check also in elimination phase.
-- **Schema quirks**: `GPA` stored as `NUMERIC(3,2)`, cast via `::float4` in SQL queries. `target_*` arrays default to `'{}'` not NULL.
-- **Error strings**: Mix of Turkish and English in responses.
-- **Architecture**: Monolithic single binary. All routes, state, and business logic in one crate. No middleware layers beyond CORS.
-
-## API routes (all under `backend/`)
-| Method | Path | Handler |
-|---|---|---|
-| POST | `/register` | register |
-| POST | `/match/:student_id` | match_student |
-| POST/GET | `/profiles` | create_profile / get_profiles |
-| GET | `/profiles/:id` | get_profile |
-| POST/GET | `/students` | create_student / get_students |
-| GET/PUT | `/students/:profile_id` | get_student / update_student |
-| GET | `/donors` | get_donors |
-| GET | `/donors/:profile_id` | get_donor |
-| POST | `/donors/:profile_id/verify` | verify_donor |
-| POST/GET | `/scholarships` | create_scholarship / get_scholarships |
-| GET | `/scholarships/:id` | get_scholarship |
-| GET | `/cities` | get_cities |
-| GET | `/departments` | get_departments |
-| DELETE | `/departments/:name` | delete_department |
-| GET | `/income-levels` | get_income_levels |
-| GET | `/user-roles` | get_user_roles |
-
-## Gotchas
-- `CreateScholarshipRequest` returns the created row matched by `title` (not by returned ID) — fragile if duplicate titles.
-- `delete_department` uses a manual transaction: removes from scholarship arrays, deletes referencing students, then deletes the department.
-- New departments are auto-inserted (with `ON CONFLICT DO NOTHING`) when creating students or scholarships.
-- `.env` is gitignored; use `.env.example` as template.
+- **Scoring engine**: Empty target arrays (`[]`) = no filter (all pass). Elimination checks `is_empty()` after checking `is_some()`. GPA minimum check in elimination phase.
+- **Schema**: `GPA` stored as `NUMERIC(3,2)`, cast via `::float4` in queries. `target_*` arrays default to `'{}'` not NULL. `matches` table exists in schema but has **no handler** yet.
+- **Error strings**: Mix of Turkish and English.
+- `CreateScholarshipRequest` fetches back by `title` (not returned ID) — fragile with duplicate titles.
+- `delete_department` uses manual transaction: removes from scholarship arrays, deletes referencing students, then deletes department.
+- New departments auto-inserted (`ON CONFLICT DO NOTHING`) when creating students or scholarships.
+- **`.env.example` is incomplete** — it omits `SUPABASE_URL` and `SUPABASE_ANON_KEY`, but `AppConfig::from_env()` panics without them. Copy from `.env` or add them manually.
+- `.env` is gitignored; use `.env.example` as template (but add the two Supabase vars).

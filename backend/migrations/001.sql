@@ -3,7 +3,7 @@
 -- ============================================================
 
 -- 1. ENUM TYPES
-CREATE TYPE user_role AS ENUM ('student', 'donor');
+CREATE TYPE user_role AS ENUM ('student', 'donor', 'admin');
 CREATE TYPE income_level AS ENUM ('low', 'medium', 'high');
 CREATE TYPE match_status AS ENUM ('matched', 'applied', 'under_review', 'approved', 'rejected');
 
@@ -54,7 +54,7 @@ CREATE TABLE public.user_roles (
     name TEXT PRIMARY KEY
 );
 
-INSERT INTO public.user_roles (name) VALUES ('student'), ('donor');
+INSERT INTO public.user_roles (name) VALUES ('student'), ('donor'), ('admin');
 
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Everyone can read user_roles" ON public.user_roles FOR SELECT USING (true);

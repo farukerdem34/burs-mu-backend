@@ -1,3 +1,4 @@
+mod auth;
 mod config;
 mod engine;
 mod handlers;
@@ -26,6 +27,7 @@ async fn main() {
         .route("/match/:student_id", post(handlers::match_student))
         // AUTH
         .route("/register", post(handlers::register))
+        .route("/login", post(handlers::login))
         // PROFILES
         .route("/profiles", post(handlers::create_profile).get(handlers::get_profiles))
         .route("/profiles/:id", get(handlers::get_profile))
