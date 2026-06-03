@@ -28,6 +28,7 @@ backend/          # All Rust code
 | Apply migration | `psql "$DATABASE_URL" -f migrations/001.sql` |
 | Swagger UI | `docker compose up` serves at `http://localhost:8081` |
 | Build | `cargo build` (in `backend/`) |
+| Test | `cargo test --test api_tests` (in `backend/`) — requires running DB |
 
 ## Auth (critical — non-standard)
 - **No JWT, no session, no real tokens.** `Authorization: Bearer <uuid>` where `<uuid>` is the user's profile UUID returned by `POST /login` or `POST /register`.
@@ -58,7 +59,7 @@ backend/          # All Rust code
 | GET | `/user-roles` | No |
 
 ## Key conventions & gotchas
-- **No tests exist** — `todo.md` lists manual testing tasks. No test framework configured.
+- **Integration tests** — `tests/api_tests.rs` covers all endpoints (auth, profiles, students, donors, scholarships, match, departments). Run with `cargo test --test api_tests`. Requires a running database with the schema seeded and an admin user (`b3aecf7e-f3de-4dad-9ca8-7e538bd34900` with role `admin`).
 - **CORS**: `CorsLayer::permissive()` — wide open.
 - **Connection pool**: `PgPoolOptions` with 1-5 connections, `test_before_acquire(false)`.
 - **Scoring engine**: Empty target arrays (`[]`) = no filter (all pass). Elimination checks `is_empty()` after checking `is_some()`. GPA minimum check in elimination phase.

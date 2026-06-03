@@ -1,15 +1,4 @@
-mod auth;
-mod config;
-mod engine;
-mod handlers;
-mod models;
-mod state;
-
-use axum::routing::{delete, get, post};
-use axum::Router;
 use std::net::SocketAddr;
-use tower_http::cors::CorsLayer;
-use tracing_subscriber;
 
 #[tokio::main]
 async fn main() {
@@ -17,38 +6,11 @@ async fn main() {
 
     dotenvy::dotenv().ok();
 
-    let config = config::AppConfig::from_env();
+    let config = burs_mu::config::AppConfig::from_env();
     let server_port = config.server_port;
-    let state = state::AppState::new(config).await;
+    let state = burs_mu::state::AppState::new(config).await;
 
-    let cors = CorsLayer::permissive();
-
-    let app = Router::new()
-        .route("/match/:student_id", post(handlers::match_student))
-        // AUTH
-        .route("/register", post(handlers::register))
-        .route("/login", post(handlers::login))
-        // PROFILES
-        .route("/profiles", post(handlers::create_profile).get(handlers::get_profiles))
-        .route("/profiles/:id", get(handlers::get_profile))
-        // STUDENTS
-        .route("/students", post(handlers::create_student).get(handlers::get_students))
-        .route("/students/:profile_id", get(handlers::get_student).put(handlers::update_student))
-        // DONORS
-        .route("/donors", get(handlers::get_donors))
-        .route("/donors/:profile_id", get(handlers::get_donor))
-        .route("/donors/:profile_id/verify", post(handlers::verify_donor))
-        // SCHOLARSHIPS
-        .route("/scholarships", post(handlers::create_scholarship).get(handlers::get_scholarships))
-        .route("/scholarships/:id", get(handlers::get_scholarship))
-        // REFERENCE TABLES
-        .route("/cities", get(handlers::get_cities))
-        .route("/departments", get(handlers::get_departments))
-        .route("/departments/:name", delete(handlers::delete_department))
-        .route("/income-levels", get(handlers::get_income_levels))
-        .route("/user-roles", get(handlers::get_user_roles))
-        .layer(cors)
-        .with_state(state);
+    let app = burs_mu::build_router(state);
 
     let addr: SocketAddr = format!("0.0.0.0:{}", server_port)
         .parse()
