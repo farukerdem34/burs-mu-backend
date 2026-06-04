@@ -939,7 +939,7 @@ pub async fn get_user_roles(State(state): State<AppState>) -> impl IntoResponse 
 }
 
 pub async fn get_income_levels(State(state): State<AppState>) -> impl IntoResponse {
-    match sqlx::query_as::<_, IncomeLevelRow>("SELECT name FROM income_levels ORDER BY name")
+    match sqlx::query_as::<_, IncomeLevelRow>("SELECT value FROM income_levels ORDER BY value")
         .fetch_all(&state.db_pool)
         .await
     {

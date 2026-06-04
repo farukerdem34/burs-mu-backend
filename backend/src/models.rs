@@ -3,13 +3,68 @@ use serde::{Deserialize, Serialize};
 use sqlx::Type;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
-#[sqlx(type_name = "income_level", rename_all = "lowercase")]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(i16)]
 pub enum IncomeLevel {
-    Low,
-    Medium,
-    High,
+    Low = 0,
+    Medium = 1,
+    High = 2,
+}
+
+impl Serialize for IncomeLevel {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_i16(*self as i16)
+    }
+}
+
+impl<'de> Deserialize<'de> for IncomeLevel {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let val = i16::deserialize(deserializer)?;
+        match val {
+            0 => Ok(Self::Low),
+            1 => Ok(Self::Medium),
+            2 => Ok(Self::High),
+            _ => Err(serde::de::Error::custom(format!(
+                "invalid income level: {}",
+                val
+            ))),
+        }
+    }
+}
+
+impl sqlx::Type<sqlx::Postgres> for IncomeLevel {
+    fn type_info() -> <sqlx::Postgres as sqlx::Database>::TypeInfo {
+        <i16 as sqlx::Type<sqlx::Postgres>>::type_info()
+    }
+}
+
+impl sqlx::Encode<'_, sqlx::Postgres> for IncomeLevel {
+    fn encode_by_ref(
+        &self,
+        buf: &mut sqlx::postgres::PgArgumentBuffer,
+    ) -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
+        <i16 as sqlx::Encode<sqlx::Postgres>>::encode(*self as i16, buf)
+    }
+}
+
+impl sqlx::Decode<'_, sqlx::Postgres> for IncomeLevel {
+    fn decode(
+        value: sqlx::postgres::PgValueRef<'_>,
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        let val: i16 = <i16 as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
+        match val {
+            0 => Ok(Self::Low),
+            1 => Ok(Self::Medium),
+            2 => Ok(Self::High),
+            _ => Err(format!("invalid income level: {}", val).into()),
+        }
+    }
+}
+
+impl sqlx::postgres::PgHasArrayType for IncomeLevel {
+    fn array_type_info() -> sqlx::postgres::PgTypeInfo {
+        <i16 as sqlx::postgres::PgHasArrayType>::array_type_info()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
@@ -139,7 +194,7 @@ pub struct Department {
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct IncomeLevelRow {
-    pub name: String,
+    pub value: i16,
 }
 
 #[derive(Debug, Serialize, sqlx::FromRow)]

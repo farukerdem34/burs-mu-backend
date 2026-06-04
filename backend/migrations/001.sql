@@ -4,7 +4,6 @@
 
 -- 1. ENUM TYPES
 CREATE TYPE user_role AS ENUM ('student', 'donor', 'admin');
-CREATE TYPE income_level AS ENUM ('low', 'medium', 'high');
 CREATE TYPE match_status AS ENUM ('matched', 'applied', 'under_review', 'approved', 'rejected');
 
 -- 2. REFERENCE TABLES (Foreign key hedefleri)
@@ -41,13 +40,13 @@ CREATE POLICY "Everyone can read departments" ON public.departments FOR SELECT U
 
 
 CREATE TABLE public.income_levels (
-    name TEXT PRIMARY KEY
+    value SMALLINT PRIMARY KEY
 );
-
-INSERT INTO public.income_levels (name) VALUES ('low'), ('medium'), ('high');
 
 ALTER TABLE public.income_levels ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Everyone can read income_levels" ON public.income_levels FOR SELECT USING (true);
+
+INSERT INTO public.income_levels (value) VALUES (0), (1), (2);
 
 
 CREATE TABLE public.user_roles (
@@ -84,20 +83,13 @@ CREATE TABLE public.students (
     gpa NUMERIC(3,2) CHECK (gpa >= 0.00 AND gpa <= 4.00),
     city TEXT NOT NULL REFERENCES public.cities(name),
     department TEXT NOT NULL REFERENCES public.departments(name),
-    income_status income_level NOT NULL,
+    income_status SMALLINT NOT NULL CHECK (income_status IN (0, 1, 2)),
     about TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Students can view their own data" ON public.students FOR SELECT USING (auth.uid() = profile_id);
-
--- income_status sadece income_levels tablosundaki değerleri alabilir
-CREATE FUNCTION check_income_level(level income_level) RETURNS boolean AS $$
-    SELECT level::text IN (SELECT name FROM public.income_levels);
-$$ LANGUAGE sql;
-
-ALTER TABLE public.students ADD CONSTRAINT students_income_status_check CHECK (check_income_level(income_status));
 
 
 -- 5. DONORS
@@ -120,7 +112,7 @@ CREATE TABLE public.scholarships (
     min_gpa NUMERIC(3,2) DEFAULT 0.00,
     target_cities TEXT[] DEFAULT '{}',
     target_departments TEXT[] DEFAULT '{}',
-    target_income_levels income_level[] DEFAULT '{}',
+    target_income_levels SMALLINT[] DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -139,15 +131,8 @@ CREATE FUNCTION check_departments(deps text[]) RETURNS boolean AS $$
            END;
 $$ LANGUAGE sql;
 
-CREATE FUNCTION check_income_levels(levels income_level[]) RETURNS boolean AS $$
-    SELECT CASE WHEN levels IS NULL OR array_length(levels, 1) IS NULL THEN true
-           ELSE (SELECT bool_and(level::text IN (SELECT name FROM public.income_levels)) FROM unnest(levels) AS level)
-           END;
-$$ LANGUAGE sql;
-
 ALTER TABLE public.scholarships ADD CONSTRAINT scholarships_target_cities_check CHECK (check_cities(target_cities));
 ALTER TABLE public.scholarships ADD CONSTRAINT scholarships_target_departments_check CHECK (check_departments(target_departments));
-ALTER TABLE public.scholarships ADD CONSTRAINT scholarships_target_income_levels_check CHECK (check_income_levels(target_income_levels));
 
 
 -- 7. MATCHES
@@ -197,8 +182,8 @@ ON CONFLICT (name) DO NOTHING;
 
 -- Students
 INSERT INTO public.students (profile_id, gpa, city, department, income_status) VALUES
-('00000000-0000-0000-0000-000000000001', 3.50, 'İstanbul', 'Bilgisayar Mühendisliği', 'low'),
-('00000000-0000-0000-0000-000000000002', 2.80, 'Ankara', 'Elektrik Mühendisliği', 'medium')
+('00000000-0000-0000-0000-000000000001', 3.50, 'İstanbul', 'Bilgisayar Mühendisliği', 0),
+('00000000-0000-0000-0000-000000000002', 2.80, 'Ankara', 'Elektrik Mühendisliği', 1)
 ON CONFLICT (profile_id) DO NOTHING;
 
 -- Donors
@@ -211,17 +196,17 @@ INSERT INTO public.scholarships (id, donor_id, title, quota, is_active, min_gpa,
 ('c690e7fd-51ff-4081-8cc9-c66161078275', '00000000-0000-0000-0000-000000000003', 'İstanbul Teknoloji Bursu', 5, TRUE, 2.5,
  ARRAY['İstanbul']::text[],
  ARRAY['Bilgisayar Mühendisliği', 'Elektrik Mühendisliği']::text[],
- ARRAY['low', 'medium']::income_level[]),
+ ARRAY[0, 1]::SMALLINT[]),
 ('9ff2c06e-09c7-4e00-829b-9a03472460a6', '00000000-0000-0000-0000-000000000003', 'Ankara Mühendislik Bursu', 3, TRUE, 3.0,
  ARRAY['Ankara']::text[],
  ARRAY['Elektrik Mühendisliği', 'Makine Mühendisliği']::text[],
- ARRAY['low']::income_level[]),
+ ARRAY[0]::SMALLINT[]),
 ('324eb1e6-da6c-47e4-9e2d-1008f06191af', '00000000-0000-0000-0000-000000000003', 'Genel Başarı Bursu', 10, TRUE, 0.0,
  ARRAY[]::text[],
  ARRAY[]::text[],
- ARRAY[]::income_level[]),
+ ARRAY[]::SMALLINT[]),
 ('ab29ff54-4777-45ae-9c43-823115c22b6e', '00000000-0000-0000-0000-000000000003', 'Yüksek GPA Bursu', 2, TRUE, 3.5,
  ARRAY[]::text[],
  ARRAY[]::text[],
- ARRAY[]::income_level[])
+ ARRAY[]::SMALLINT[])
 ON CONFLICT (id) DO NOTHING;
