@@ -19,6 +19,30 @@ class CreateScholarshipRequest {
   final List<String>? targetDepartments;
   @JsonKey(name: 'target_income_levels')
   final List<IncomeLevel>? targetIncomeLevels;
+  @JsonKey(name: 'amount_per_year')
+  final double? amountPerYear;
+  @JsonKey(name: 'duration_months')
+  final int? durationMonths;
+  @JsonKey(name: 'scholarship_type')
+  final String? scholarshipType;
+  @JsonKey(name: 'preferred_gender')
+  final String? preferredGender;
+  @JsonKey(name: 'requires_essay')
+  final bool? requiresEssay;
+  @JsonKey(name: 'requires_interview')
+  final bool? requiresInterview;
+  @JsonKey(name: 'accepts_disability')
+  final bool? acceptsDisability;
+  @JsonKey(name: 'accepts_orphan')
+  final bool? acceptsOrphan;
+  @JsonKey(name: 'accepts_refugee')
+  final bool? acceptsRefugee;
+  @JsonKey(name: 'max_semester')
+  final int? maxSemester;
+  @JsonKey(name: 'min_extracurricular_score')
+  final int? minExtracurricularScore;
+  @JsonKey(name: 'max_household_income')
+  final double? maxHouseholdIncome;
 
   CreateScholarshipRequest({
     this.donorId,
@@ -29,6 +53,18 @@ class CreateScholarshipRequest {
     this.targetCities,
     this.targetDepartments,
     this.targetIncomeLevels,
+    this.amountPerYear,
+    this.durationMonths,
+    this.scholarshipType,
+    this.preferredGender,
+    this.requiresEssay,
+    this.requiresInterview,
+    this.acceptsDisability,
+    this.acceptsOrphan,
+    this.acceptsRefugee,
+    this.maxSemester,
+    this.minExtracurricularScore,
+    this.maxHouseholdIncome,
   });
 
   factory CreateScholarshipRequest.fromJson(Map<String, dynamic> json) =>

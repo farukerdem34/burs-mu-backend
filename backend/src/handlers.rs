@@ -287,7 +287,7 @@ pub async fn register(
             let department = find_or_create_department(&state, department_input).await;
 
             if let Err(e) = sqlx::query(
-                "INSERT INTO students (profile_id, gpa, city, department, income_status, semester, family_income::float8, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+                "INSERT INTO students (profile_id, gpa, city, department, income_status, semester, family_income, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
             )
             .bind(user_id)
             .bind(body.gpa)
@@ -308,6 +308,17 @@ pub async fn register(
             {
                 tracing::error!("Failed to create student after signup: {}", e);
             }
+        }
+    }
+
+    // If donor role, create donor record
+    if body.role == crate::models::UserRole::Donor {
+        if let Err(e) = sqlx::query("INSERT INTO donors (profile_id, is_verified) VALUES ($1, false)")
+            .bind(user_id)
+            .execute(&state.db_pool)
+            .await
+        {
+            tracing::error!("Failed to create donor after signup: {}", e);
         }
     }
 
@@ -426,7 +437,7 @@ pub async fn create_student(
     let department = find_or_create_department(&state, &body.department).await;
 
     match sqlx::query(
-        "INSERT INTO students (profile_id, gpa, city, department, income_status, semester, family_income::float8, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+        "INSERT INTO students (profile_id, gpa, city, department, income_status, semester, family_income, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
     )
     .bind(body.profile_id)
     .bind(body.gpa)
@@ -641,7 +652,7 @@ pub async fn update_student(
                 return (StatusCode::BAD_REQUEST, Json("İlk kayıtta şehir, departman ve gelir düzeyi zorunludur")).into_response();
             }
             if let Err(e) = sqlx::query(
-                "INSERT INTO students (profile_id, gpa, city, department, income_status, about, semester, family_income::float8, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
+                "INSERT INTO students (profile_id, gpa, city, department, income_status, about, semester, family_income, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
             )
             .bind(profile_id)
             .bind(body.gpa)
@@ -687,16 +698,7 @@ pub async fn update_student(
 
 pub async fn get_donors(
     State(state): State<AppState>,
-    auth: AuthUser,
 ) -> impl IntoResponse {
-    if auth.role != UserRole::Admin {
-        return (
-            StatusCode::FORBIDDEN,
-            Json("Sadece yöneticiler burs verenleri görüntüleyebilir"),
-        )
-            .into_response();
-    }
-
     match sqlx::query_as::<_, Donor>(
         "SELECT profile_id, is_verified, created_at FROM donors ORDER BY created_at DESC",
     )
@@ -819,7 +821,7 @@ pub async fn create_scholarship(
     }
 
     match sqlx::query(
-        "INSERT INTO scholarships (donor_id, title, quota, is_active, min_gpa, target_cities, target_departments, target_income_levels, amount_per_year::float8, duration_months, scholarship_type, preferred_gender, requires_essay, requires_interview, accepts_disability, accepts_orphan, accepts_refugee, max_semester, min_extracurricular_score, max_household_income) VALUES ($1, $2, COALESCE($3, 1), COALESCE($4, true), $5, $6, $7, $8, $9, COALESCE($10, 12), $11, $12, COALESCE($13, false), COALESCE($14, false), COALESCE($15, true), COALESCE($16, true), COALESCE($17, true), $18, COALESCE($19, 0), $20)",
+        "INSERT INTO scholarships (donor_id, title, quota, is_active, min_gpa, target_cities, target_departments, target_income_levels, amount_per_year, duration_months, scholarship_type, preferred_gender, requires_essay, requires_interview, accepts_disability, accepts_orphan, accepts_refugee, max_semester, min_extracurricular_score, max_household_income) VALUES ($1, $2, COALESCE($3, 1), COALESCE($4, true), $5, $6, $7, $8, $9, COALESCE($10, 12), $11, $12, COALESCE($13, false), COALESCE($14, false), COALESCE($15, true), COALESCE($16, true), COALESCE($17, true), $18, COALESCE($19, 0), $20)",
     )
     .bind(donor_id)
     .bind(&body.title)

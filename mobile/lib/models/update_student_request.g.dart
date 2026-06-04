@@ -17,6 +17,15 @@ UpdateStudentRequest _$UpdateStudentRequestFromJson(
     json['income_status'],
   ),
   about: json['about'] as String?,
+  semester: (json['semester'] as num?)?.toInt(),
+  familyIncome: (json['family_income'] as num?)?.toDouble(),
+  householdSize: (json['household_size'] as num?)?.toInt(),
+  numSiblingsInEducation: (json['num_siblings_in_education'] as num?)?.toInt(),
+  hasDisability: json['has_disability'] as bool?,
+  isOrphan: json['is_orphan'] as bool?,
+  isRefugee: json['is_refugee'] as bool?,
+  academicStanding: json['academic_standing'] as String?,
+  extracurricularScore: (json['extracurricular_score'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$UpdateStudentRequestToJson(
@@ -27,6 +36,15 @@ Map<String, dynamic> _$UpdateStudentRequestToJson(
   'department': instance.department,
   'income_status': _$IncomeLevelEnumMap[instance.incomeStatus],
   'about': instance.about,
+  'semester': instance.semester,
+  'family_income': instance.familyIncome,
+  'household_size': instance.householdSize,
+  'num_siblings_in_education': instance.numSiblingsInEducation,
+  'has_disability': instance.hasDisability,
+  'is_orphan': instance.isOrphan,
+  'is_refugee': instance.isRefugee,
+  'academic_standing': instance.academicStanding,
+  'extracurricular_score': instance.extracurricularScore,
 };
 
 const _$IncomeLevelEnumMap = {
