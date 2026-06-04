@@ -18,43 +18,54 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _departmentController = TextEditingController();
   final _gpaController = TextEditingController();
+  TextEditingController? _deptController;
 
   UserRole _role = UserRole.student;
   String? _selectedCity;
   IncomeLevel? _incomeStatus;
   List<String> _cities = [];
-  bool _isLoadingCities = true;
-  String? _citiesError;
+  List<String> _departments = [];
+  bool _isLoadingRefs = true;
+  String? _refsError;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCities());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadReferences());
   }
 
-  Future<void> _loadCities() async {
+  Future<void> _loadReferences() async {
     setState(() {
-      _isLoadingCities = true;
-      _citiesError = null;
+      _isLoadingRefs = true;
+      _refsError = null;
     });
 
     try {
       final dio = ref.read(dioProvider);
       final refService = ReferenceService(dio);
-      final cities = await refService.getCities();
+      final results = await Future.wait([
+        refService.getCities(),
+        refService.getDepartments(),
+      ]);
       if (mounted) {
         setState(() {
-          _cities = cities.map((e) => e.name ?? '').where((n) => n.isNotEmpty).toList();
-          _isLoadingCities = false;
+          _cities = results[0]
+              .map((e) => e.name ?? '')
+              .where((n) => n.isNotEmpty)
+              .toList();
+          _departments = results[1]
+              .map((e) => e.name ?? '')
+              .where((n) => n.isNotEmpty)
+              .toList();
+          _isLoadingRefs = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _citiesError = 'Şehirler yüklenemedi: $e';
-          _isLoadingCities = false;
+          _refsError = 'Referanslar yüklenemedi: $e';
+          _isLoadingRefs = false;
         });
       }
     }
@@ -64,7 +75,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _departmentController.dispose();
     _gpaController.dispose();
     super.dispose();
   }
@@ -77,7 +87,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       password: _passwordController.text,
       role: _role,
       city: _role == UserRole.student ? _selectedCity : null,
-      department: _role == UserRole.student ? _departmentController.text.trim() : null,
+      department: _role == UserRole.student ? _deptController?.text.trim() : null,
       incomeStatus: _role == UserRole.student ? _incomeStatus : null,
       gpa: _role == UserRole.student && _gpaController.text.isNotEmpty
           ? double.tryParse(_gpaController.text)
@@ -134,27 +144,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               if (_role == UserRole.student) ...[
                 const SizedBox(height: 16),
-                if (_isLoadingCities)
+                if (_isLoadingRefs)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 16),
                     child: Center(child: CircularProgressIndicator()),
                   )
-                else if (_citiesError != null)
+                else if (_refsError != null)
                   Column(
                     children: [
                       Text(
-                        _citiesError!,
+                        _refsError!,
                         style: TextStyle(color: Theme.of(context).colorScheme.error),
                       ),
                       const SizedBox(height: 8),
                       TextButton.icon(
-                        onPressed: _loadCities,
+                        onPressed: _loadReferences,
                         icon: const Icon(Icons.refresh),
                         label: const Text('Tekrar Dene'),
                       ),
                     ],
                   )
-                else
+                else ...[
                   DropdownButtonFormField<String>(
                     initialValue: _selectedCity,
                     decoration: const InputDecoration(labelText: 'Şehir'),
@@ -164,31 +174,47 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     onChanged: (v) => setState(() => _selectedCity = v),
                     validator: (v) => v == null ? 'Şehir seçin' : null,
                   ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _departmentController,
-                  decoration: const InputDecoration(
-                    labelText: 'Bölüm',
-                    hintText: 'Örn: Bilgisayar Mühendisliği',
+                  const SizedBox(height: 16),
+                  Autocomplete<String>(
+                    optionsBuilder: (textEditingValue) {
+                      if (textEditingValue.text.isEmpty) {
+                        return _departments;
+                      }
+                      return _departments.where((d) => d
+                          .toLowerCase()
+                          .contains(textEditingValue.text.toLowerCase()));
+                    },
+                    onSelected: (v) => _deptController?.text = v,
+                    fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                      _deptController = controller;
+                      return TextFormField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        decoration: const InputDecoration(
+                          labelText: 'Bölüm',
+                          hintText: 'Ara veya yazın',
+                        ),
+                        validator: (v) =>
+                            v != null && v.trim().isNotEmpty ? null : 'Bölüm girin',
+                      );
+                    },
                   ),
-                  validator: (v) =>
-                      v != null && v.trim().isNotEmpty ? null : 'Bölüm girin',
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<IncomeLevel>(
-                  initialValue: _incomeStatus,
-                  decoration: const InputDecoration(labelText: 'Gelir Düzeyi'),
-                  items: IncomeLevel.values
-                      .map((l) => DropdownMenuItem(value: l, child: Text(l.name)))
-                      .toList(),
-                  onChanged: (v) => setState(() => _incomeStatus = v),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _gpaController,
-                  decoration: const InputDecoration(labelText: 'GPA (opsiyonel)'),
-                  keyboardType: TextInputType.number,
-                ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<IncomeLevel>(
+                    initialValue: _incomeStatus,
+                    decoration: const InputDecoration(labelText: 'Gelir Düzeyi'),
+                    items: IncomeLevel.values
+                        .map((l) => DropdownMenuItem(value: l, child: Text(l.name)))
+                        .toList(),
+                    onChanged: (v) => setState(() => _incomeStatus = v),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _gpaController,
+                    decoration: const InputDecoration(labelText: 'GPA (opsiyonel)'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
               ],
               const SizedBox(height: 24),
               if (authState.error != null)
