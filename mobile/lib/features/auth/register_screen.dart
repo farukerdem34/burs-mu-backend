@@ -79,6 +79,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) return 'E-posta girin';
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    if (!emailRegex.hasMatch(value.trim())) return 'Geçerli bir e-posta girin';
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) return 'Şifre girin';
+
+    int score = 0;
+    if (value.length >= 8) score++;
+    if (RegExp(r'[a-z]').hasMatch(value)) score++;
+    if (RegExp(r'[A-Z]').hasMatch(value)) score++;
+    if (RegExp(r'[0-9]').hasMatch(value)) score++;
+    if (RegExp(r'[^a-zA-Z0-9]').hasMatch(value)) score++;
+
+    if (score < 3) {
+      return 'Şifre çok zayıf. En az 8 karakter, büyük/küçük harf, rakam ve özel karakter içermeli';
+    }
+    if (score < 4) {
+      return 'Şifre yeterince güçlü değil. Rakam ve özel karakter ekleyin';
+    }
+    return null;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -121,16 +149,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'E-posta'),
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) =>
-                    v != null && v.contains('@') ? null : 'Geçerli bir e-posta girin',
+                validator: _validateEmail,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Şifre'),
                 obscureText: true,
-                validator: (v) =>
-                    v != null && v.length >= 6 ? null : 'Şifre en az 6 karakter olmalı',
+                validator: _validatePassword,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<UserRole>(
