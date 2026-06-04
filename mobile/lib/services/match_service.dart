@@ -8,8 +8,8 @@ class MatchService {
   MatchService(this._dio);
 
   Future<List<MatchResult>> matchStudent(String studentId) async {
-    final response = await _dio.post<List<dynamic>>(
-      '${ApiConstants.match}/$studentId',
+    final response = await _dio.get<List<dynamic>>(
+      '${ApiConstants.students}/$studentId/matches',
     );
     return response.data!
         .map((e) => MatchResult.fromJson(e as Map<String, dynamic>))
