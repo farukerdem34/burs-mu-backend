@@ -1,7 +1,7 @@
 # POST /match/{student_id}
 
 **Resource:** [Eşleştirme](../resources/Eşleştirme.md)
-**Öğrenciyi aktif burslarla eşleştir**
+**Öğrenciyi aktif burslarla eşleştir (admin)**
 **Operation ID:** `post--match-{student_id}`
 
 ## Parameters
@@ -15,9 +15,13 @@
 | Status | Description |
 |--------|-------------|
 | 200 | Skorlanmış eşleşme sonuçları (büyükten küçüğe) |
+| 403 | Sadece yöneticiler eşleştirme yapabilir |
 | 404 | Öğrenci bulunamadı (boş dizi döner) |
 
 **Success Response Schema:**
 
 Array of [MatchResult](../schemas/Match/MatchResult.md)
 
+## Security
+
+- **BearerAuth**

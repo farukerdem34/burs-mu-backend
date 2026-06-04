@@ -4,4 +4,4 @@
 
 | Method | Path | Summary | Details |
 |--------|------|---------|----------|
-| POST | `/match/{student_id}` | Öğrenciyi aktif burslarla eşleştir | [View](../operations/post-match-student-id.md) |
+| POST | `/match/{student_id}` | Öğrenciyi aktif burslarla eşleştir (admin) | [View](../operations/post-match-student-id.md) |

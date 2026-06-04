@@ -12,6 +12,6 @@
 | `is_active` | boolean | No |  |
 | `min_gpa` | number (float) | No |  |
 | `target_cities` | string[] | No | Boş veya null = tüm şehirler. Yeni şehirler otomatik eklenir. |
-| `target_departments` | string[] | No | Boş veya null = tüm departmanlar |
+| `target_departments` | string[] | No | Boş veya null = tüm departmanlar. Benzer isimler otomatik eşleştirilir. |
 | `target_income_levels` | IncomeLevel[] | No | Boş veya null = tüm gelir düzeyleri |
 

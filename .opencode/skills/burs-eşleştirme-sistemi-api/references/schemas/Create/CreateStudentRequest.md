@@ -9,6 +9,6 @@
 | `profile_id` | string (uuid) | Yes |  |
 | `gpa` | number (float) | No |  |
 | `city` | string | Yes | Geçerli bir Türkiye şehri |
-| `department` | string | Yes | Mevcut bir departman (FK) |
+| `department` | string | Yes | Departman adı. Benzer isimler otomatik eşleştirilir, yenisi eklenir. |
 | `income_status` | [IncomeLevel](IncomeLevel.md) | Yes |  |
 
