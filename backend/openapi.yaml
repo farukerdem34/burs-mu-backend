@@ -70,8 +70,10 @@ paths:
   # ── Profiller ──────────────────────────────────────
   /profiles:
     get:
-      summary: Tüm profilleri listele
+      summary: Tüm profilleri listele (admin)
       tags: [Profiller]
+      security:
+        - BearerAuth: []
       responses:
         "200":
           description: Profil listesi
@@ -81,6 +83,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Profile"
+        "403":
+          description: Sadece yöneticiler profilleri görüntüleyebilir
     post:
       summary: Yeni profil oluştur
       tags: [Profiller]
@@ -126,8 +130,10 @@ paths:
   # ── Öğrenciler ─────────────────────────────────────
   /students:
     get:
-      summary: Tüm öğrencileri listele
+      summary: Tüm öğrencileri listele (admin)
       tags: [Öğrenciler]
+      security:
+        - BearerAuth: []
       responses:
         "200":
           description: Öğrenci listesi
@@ -137,6 +143,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Student"
+        "403":
+          description: Sadece yöneticiler öğrencileri görüntüleyebilir
     post:
       summary: Yeni öğrenci oluştur
       tags: [Öğrenciler]
@@ -214,11 +222,43 @@ paths:
         "404":
           description: Öğrenci bulunamadı
 
+  /students/{profile_id}/matches:
+    get:
+      summary: Öğrencinin kendi eşleşmelerini getir
+      description: |
+        Öğrenci kendi eşleşme sonuçlarını görüntüler.
+        Aktif burslar arasında skor hesaplaması yapılır.
+      tags: [Öğrenciler]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Skorlanmış eşleşme sonuçları (büyükten küçüğe)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchResult"
+        "403":
+          description: Kendi eşleşmelerinizi görüntüleyebilirsiniz
+        "404":
+          description: Öğrenci bulunamadı
+
   # ── Donorlar ───────────────────────────────────────
   /donors:
     get:
-      summary: Tüm donorları listele
+      summary: Tüm donorları listele (admin)
       tags: [Donorlar]
+      security:
+        - BearerAuth: []
       responses:
         "200":
           description: Donor listesi
@@ -228,6 +268,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Donor"
+        "403":
+          description: Sadece yöneticiler burs verenleri görüntüleyebilir
 
   /donors/{profile_id}:
     get:
@@ -310,7 +352,7 @@ paths:
         "400":
           description: Geçersiz şehir, departman veya gelir düzeyi
         "403":
-          description: Sadece burs verenler burs oluşturabilir
+          description: Sadece yöneticiler burs oluşturabilir
 
   /scholarships/{id}:
     get:
@@ -336,8 +378,10 @@ paths:
   # ── Eşleştirme ─────────────────────────────────────
   /match/{student_id}:
     post:
-      summary: Öğrenciyi aktif burslarla eşleştir
+      summary: Öğrenciyi aktif burslarla eşleştir (admin)
       tags: [Eşleştirme]
+      security:
+        - BearerAuth: []
       parameters:
         - name: student_id
           in: path
@@ -355,6 +399,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/MatchResult"
+        "403":
+          description: Sadece yöneticiler eşleştirme yapabilir
         "404":
           description: Öğrenci bulunamadı (boş dizi döner)
 
@@ -629,7 +675,7 @@ components:
           example: İstanbul
         department:
           type: string
-          description: "Rol 'student' ise kayıt anında girilebilir, sonradan da eklenebilir."
+          description: "Rol 'student' ise kayıt anında girilebilir, sonradan da eklenebilir. Benzer isimler otomatik eşleştirilir."
           example: Bilgisayar Mühendisliği
         income_status:
           $ref: "#/components/schemas/IncomeLevel"
@@ -687,7 +733,7 @@ components:
           description: Geçerli bir Türkiye şehri
         department:
           type: string
-          description: Mevcut bir departman (FK)
+          description: "Departman adı. Benzer isimler otomatik eşleştirilir, yenisi eklenir."
         income_status:
           $ref: "#/components/schemas/IncomeLevel"
 
@@ -724,7 +770,7 @@ components:
           items:
             type: string
           nullable: true
-          description: Boş veya null = tüm departmanlar
+          description: Boş veya null = tüm departmanlar. Benzer isimler otomatik eşleştirilir.
         target_income_levels:
           type: array
           items:
@@ -747,7 +793,7 @@ components:
           description: "Türkiye şehri (yeni kayıtta zorunlu, sonraki güncellemelerde gönderilmezse değişmez)"
         department:
           type: string
-          description: "Departman (yeni kayıtta zorunlu, sonraki güncellemelerde gönderilmezse değişmez)"
+          description: "Departman (yeni kayıtta zorunlu, sonraki güncellemelerde gönderilmezse değişmez). Benzer isimler otomatik eşleştirilir."
         income_status:
           $ref: "#/components/schemas/IncomeLevel"
           description: "Gelir düzeyi (yeni kayıtta zorunlu, sonraki güncellemelerde gönderilmezse değişmez)"
