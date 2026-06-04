@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_role.dart';
 import '../auth/login_screen.dart';
@@ -26,10 +27,7 @@ class HomeScreen extends ConsumerWidget {
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
               if (context.mounted) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
+                context.go('/login');
               }
             },
           ),
@@ -52,21 +50,21 @@ class HomeScreen extends ConsumerWidget {
   List<Widget> _studentButtons(BuildContext context) => [
         _menuButton(
           context,
-          icon: Icons.school,
+          icon: Icons.account_balance,
           label: 'Bursları Gör',
-          onTap: () => _showComingSoon(context),
+          onTap: () => context.push('/scholarships'),
         ),
         _menuButton(
           context,
           icon: Icons.assessment,
           label: 'Eşleşme Sonuçlarım',
-          onTap: () => _showComingSoon(context),
+          onTap: () => context.push('/students'),
         ),
         _menuButton(
           context,
           icon: Icons.people,
           label: 'Tüm Öğrenciler',
-          onTap: () => _showComingSoon(context),
+          onTap: () => context.push('/students'),
         ),
       ];
 
@@ -74,14 +72,14 @@ class HomeScreen extends ConsumerWidget {
         _menuButton(
           context,
           icon: Icons.list_alt,
-          label: 'Burslarım',
-          onTap: () => _showComingSoon(context),
+          label: 'Burslar',
+          onTap: () => context.push('/scholarships'),
         ),
         _menuButton(
           context,
           icon: Icons.add_circle,
           label: 'Yeni Burs Oluştur',
-          onTap: () => _showComingSoon(context),
+          onTap: () => context.push('/scholarships/create'),
         ),
       ];
 
@@ -90,33 +88,27 @@ class HomeScreen extends ConsumerWidget {
           context,
           icon: Icons.verified_user,
           label: 'Donör Doğrula',
-          onTap: () => _showComingSoon(context),
+          onTap: () => context.push('/admin/verify-donors'),
         ),
         _menuButton(
           context,
           icon: Icons.school,
           label: 'Tüm Öğrenciler',
-          onTap: () => _showComingSoon(context),
+          onTap: () => context.push('/students'),
         ),
         _menuButton(
           context,
           icon: Icons.business,
           label: 'Tüm Donörler',
-          onTap: () => _showComingSoon(context),
+          onTap: () => context.push('/donors'),
         ),
         _menuButton(
           context,
           icon: Icons.category,
           label: 'Departman Yönetimi',
-          onTap: () => _showComingSoon(context),
+          onTap: () => context.push('/admin/departments'),
         ),
       ];
-
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Bu özellik henüz eklenmedi')),
-    );
-  }
 
   Widget _menuButton(
     BuildContext context, {
