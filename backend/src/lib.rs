@@ -2,6 +2,7 @@ pub mod auth;
 pub mod config;
 pub mod engine;
 pub mod handlers;
+pub mod matching;
 pub mod models;
 pub mod state;
 
@@ -14,6 +15,7 @@ pub fn build_router(state: state::AppState) -> Router {
 
     Router::new()
         .route("/match/:student_id", post(handlers::match_student))
+        .route("/match/run", post(handlers::run_matching_handler))
         .route("/register", post(handlers::register))
         .route("/login", post(handlers::login))
         .route(

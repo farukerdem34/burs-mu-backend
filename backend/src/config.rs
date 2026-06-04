@@ -10,6 +10,7 @@ pub struct AppConfig {
     pub weight_department: f32,
     pub weight_gpa: f32,
     pub weight_income: f32,
+    pub matching_interval_minutes: u64,
 }
 
 impl AppConfig {
@@ -39,6 +40,10 @@ impl AppConfig {
                 .unwrap_or_else(|_| "0.2".to_string())
                 .parse()
                 .expect("WEIGHT_INCOME must be a valid f32"),
+            matching_interval_minutes: env::var("MATCHING_INTERVAL_MINUTES")
+                .unwrap_or_else(|_| "30".to_string())
+                .parse()
+                .expect("MATCHING_INTERVAL_MINUTES must be a valid u64"),
         }
     }
 }

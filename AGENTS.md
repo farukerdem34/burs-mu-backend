@@ -9,13 +9,14 @@
 ```
 backend/          # All Rust code
   src/
-    main.rs       # Entrypoint, router, TcpListener
+    main.rs       # Entrypoint, router, TcpListener, bg matching spawn
     auth.rs       # AuthUser extractor: reads Authorization: Bearer <uuid>, looks up profiles table
     config.rs     # AppConfig::from_env() — panics if DATABASE_URL, SUPABASE_URL, or SUPABASE_ANON_KEY missing
     state.rs      # AppState { db_pool: PgPool, config: AppConfig }
     models.rs     # Student, Donor, Profile, Scholarship, ScholarshipRule + request/response types
     engine.rs     # calculate_match_score() — elimination then weighted scoring
-    handlers.rs   # All route handlers (~920 lines)
+    handlers.rs   # All route handlers (~1039 lines)
+    matching.rs   # Background matching engine: run_matching(), start_matching_scheduler()
   migrations/001.sql   # Full schema + seed data
   Cargo.toml
   Cargo.lock
@@ -43,10 +44,12 @@ backend/          # All Rust code
 | POST | `/register` | No |
 | POST | `/login` | No |
 | POST | `/match/:student_id` | No |
+| POST | `/match/run` | Yes (Admin only) |
 | POST/GET | `/profiles` | No |
 | GET | `/profiles/:id` | No |
 | POST/GET | `/students` | Yes (POST) / No (GET) |
 | GET/PUT | `/students/:profile_id` | Yes (PUT) / No (GET) |
+| GET | `/students/:profile_id/matches` | No |
 | GET | `/donors` | No |
 | GET | `/donors/:profile_id` | No |
 | POST | `/donors/:profile_id/verify` | Yes (Admin only) |
@@ -63,10 +66,11 @@ backend/          # All Rust code
 - **CORS**: `CorsLayer::permissive()` — wide open.
 - **Connection pool**: `PgPoolOptions` with 1-5 connections, `test_before_acquire(false)`.
 - **Scoring engine**: Empty target arrays (`[]`) = no filter (all pass). Elimination checks `is_empty()` after checking `is_some()`. GPA minimum check in elimination phase.
-- **Schema**: `GPA` stored as `NUMERIC(3,2)`, cast via `::float4` in queries. `target_*` arrays default to `'{}'` not NULL. `matches` table exists in schema but has **no handler** yet.
+- **Schema**: `GPA` stored as `NUMERIC(3,2)`, cast via `::float4` in queries. `target_*` arrays default to `'{}'` not NULL. `matches` table stores matching results with `match_status` enum (`matched`, `applied`, `under_review`, `approved`, `rejected`).
 - **Error strings**: Mix of Turkish and English.
 - `CreateScholarshipRequest` fetches back by `title` (not returned ID) — fragile with duplicate titles.
 - `delete_department` uses manual transaction: removes from scholarship arrays, deletes referencing students, then deletes department.
 - New departments auto-inserted (`ON CONFLICT DO NOTHING`) when creating students or scholarships.
+- **Background matching scheduler** — `matching.rs:100` runs `run_matching()` every `MATCHING_INTERVAL_MINUTES` (default 30). Spawned in `main.rs:15`. Also triggerable via `POST /match/run` (admin-only).
 - **`.env.example` is incomplete** — it omits `SUPABASE_URL` and `SUPABASE_ANON_KEY`, but `AppConfig::from_env()` panics without them. Copy from `.env` or add them manually.
 - `.env` is gitignored; use `.env.example` as template (but add the two Supabase vars).

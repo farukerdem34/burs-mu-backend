@@ -4,6 +4,7 @@ use axum::{
     response::IntoResponse,
     Json,
 };
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::auth::AuthUser;
@@ -501,17 +502,8 @@ pub async fn get_student(
 
 pub async fn get_student_matches(
     State(state): State<AppState>,
-    auth: AuthUser,
     Path(profile_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    if auth.id != profile_id && auth.role != UserRole::Admin {
-        return (
-            StatusCode::FORBIDDEN,
-            Json("Kendi eşleşmelerinizi görüntüleyebilirsiniz"),
-        )
-            .into_response();
-    }
-
     let student = match sqlx::query_as::<_, Student>(
         "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students WHERE profile_id = $1",
     )
@@ -803,6 +795,37 @@ pub async fn create_scholarship(
             )
                 .into_response()
         }
+    }
+}
+
+// --- MATCHING ---
+
+pub async fn run_matching_handler(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> impl IntoResponse {
+    if auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Sadece yöneticiler eşleştirme çalıştırabilir"),
+        )
+            .into_response();
+    }
+
+    match crate::matching::run_matching(&state).await {
+        Ok(count) => (
+            StatusCode::OK,
+            Json(json!({
+                "message": format!("{} eşleşme oluşturuldu", count),
+                "matched_count": count
+            })),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": e})),
+        )
+            .into_response(),
     }
 }
 
