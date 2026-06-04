@@ -58,13 +58,7 @@ class HomeScreen extends ConsumerWidget {
           context,
           icon: Icons.assessment,
           label: 'Eşleşme Sonuçlarım',
-          onTap: () => context.push('/students'),
-        ),
-        _menuButton(
-          context,
-          icon: Icons.people,
-          label: 'Tüm Öğrenciler',
-          onTap: () => context.push('/students'),
+          onTap: () => context.push('/match'),
         ),
       ];
 
@@ -89,12 +83,6 @@ class HomeScreen extends ConsumerWidget {
           icon: Icons.verified_user,
           label: 'Donör Doğrula',
           onTap: () => context.push('/admin/verify-donors'),
-        ),
-        _menuButton(
-          context,
-          icon: Icons.school,
-          label: 'Tüm Öğrenciler',
-          onTap: () => context.push('/students'),
         ),
         _menuButton(
           context,

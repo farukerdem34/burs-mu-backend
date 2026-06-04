@@ -4,7 +4,6 @@ import 'core/theme.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/home/home_screen.dart';
-import 'features/student/student_list_screen.dart';
 import 'features/student/student_detail_screen.dart';
 import 'features/student/student_edit_screen.dart';
 import 'features/student/match_result_screen.dart';
@@ -29,8 +28,12 @@ final _router = GoRouter(
       builder: (_, __) => const RegisterScreen(),
     ),
     GoRoute(
+      path: '/match',
+      builder: (_, __) => const MatchResultScreen(),
+    ),
+    GoRoute(
       path: '/students',
-      builder: (_, __) => const StudentListScreen(),
+      redirect: (_, __) => '/',
       routes: [
         GoRoute(
           path: ':profileId',
