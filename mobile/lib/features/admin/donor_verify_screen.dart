@@ -37,7 +37,9 @@ class DonorVerifyScreen extends ConsumerWidget {
                   subtitle: Text(
                     'Oluşturulma: ${donor.createdAt?.toString().substring(0, 10) ?? '-'}',
                   ),
-                  trailing: ElevatedButton(
+                  trailing: SizedBox(
+                    width: 100,
+                    child: ElevatedButton(
                     onPressed: () async {
                       try {
                         await ref
@@ -62,6 +64,7 @@ class DonorVerifyScreen extends ConsumerWidget {
                       }
                     },
                     child: const Text('Doğrula'),
+                  ),
                   ),
                 ),
               );
