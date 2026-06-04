@@ -15,16 +15,22 @@ class ApiClient {
       onRequest: (options, handler) async {
         if (!options.path.contains('/login') &&
             !options.path.contains('/register')) {
-          final token = await SecureStorage.getToken();
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
+          try {
+            final token = await SecureStorage.getToken();
+            if (token != null) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
+          } catch (_) {
+            // SecureStorage not available (e.g. macOS without entitlements)
           }
         }
         handler.next(options);
       },
       onError: (error, handler) async {
         if (error.response?.statusCode == 401) {
-          await SecureStorage.clear();
+          try {
+            await SecureStorage.clear();
+          } catch (_) {}
         }
         handler.next(error);
       },

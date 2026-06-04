@@ -25,24 +25,39 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _selectedCity;
   IncomeLevel? _incomeStatus;
   List<String> _cities = [];
+  bool _isLoadingCities = true;
+  String? _citiesError;
 
   @override
   void initState() {
     super.initState();
-    _loadCities();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCities());
   }
 
   Future<void> _loadCities() async {
-    final dio = ref.read(dioProvider);
-    final refService = ReferenceService(dio);
+    setState(() {
+      _isLoadingCities = true;
+      _citiesError = null;
+    });
+
     try {
+      final dio = ref.read(dioProvider);
+      final refService = ReferenceService(dio);
       final cities = await refService.getCities();
       if (mounted) {
         setState(() {
           _cities = cities.map((e) => e.name ?? '').where((n) => n.isNotEmpty).toList();
+          _isLoadingCities = false;
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _citiesError = 'Şehirler yüklenemedi: $e';
+          _isLoadingCities = false;
+        });
+      }
+    }
   }
 
   @override
@@ -119,15 +134,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               if (_role == UserRole.student) ...[
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedCity,
-                  decoration: const InputDecoration(labelText: 'Şehir'),
-                  items: _cities
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (v) => setState(() => _selectedCity = v),
-                  validator: (v) => v == null ? 'Şehir seçin' : null,
-                ),
+                if (_isLoadingCities)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (_citiesError != null)
+                  Column(
+                    children: [
+                      Text(
+                        _citiesError!,
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: _loadCities,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Tekrar Dene'),
+                      ),
+                    ],
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedCity,
+                    decoration: const InputDecoration(labelText: 'Şehir'),
+                    items: _cities
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedCity = v),
+                    validator: (v) => v == null ? 'Şehir seçin' : null,
+                  ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _departmentController,
