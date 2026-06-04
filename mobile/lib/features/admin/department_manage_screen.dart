@@ -38,6 +38,57 @@ class _DepartmentManageScreenState
     }
   }
 
+  Future<void> _createDepartment(String name) async {
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.post(ApiConstants.departments, data: {'name': name});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"$name" oluşturuldu')),
+        );
+        _loadDepartments();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showCreateDialog() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Departman Ekle'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Departman adı',
+          ),
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('İptal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Ekle'),
+          ),
+        ],
+      ),
+    );
+
+    if (name != null && name.isNotEmpty) {
+      await _createDepartment(name);
+    }
+  }
+
   Future<void> _deleteDepartment(String name) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -114,6 +165,10 @@ class _DepartmentManageScreenState
                 );
               },
             ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCreateDialog,
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }

@@ -41,7 +41,10 @@ pub fn build_router(state: state::AppState) -> Router {
         )
         .route("/scholarships/:id", get(handlers::get_scholarship))
         .route("/cities", get(handlers::get_cities))
-        .route("/departments", get(handlers::get_departments))
+        .route(
+            "/departments",
+            get(handlers::get_departments).post(handlers::create_department),
+        )
         .route("/departments/:name", delete(handlers::delete_department))
         .route("/income-levels", get(handlers::get_income_levels))
         .route("/user-roles", get(handlers::get_user_roles))

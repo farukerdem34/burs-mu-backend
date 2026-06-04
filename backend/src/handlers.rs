@@ -118,24 +118,54 @@ pub async fn login(
         "SELECT id, role FROM profiles WHERE id = $1",
     )
     .bind(user_id)
-    .fetch_one(&state.db_pool)
+    .fetch_optional(&state.db_pool)
     .await;
 
-    match profile {
-        Ok((id, role)) => (
-            StatusCode::OK,
-            Json(LoginResponse {
-                id,
-                role,
-                message: "Giriş başarılı".to_string(),
-            }),
-        )
-            .into_response(),
+    let (profile_id, role) = match profile {
+        Ok(Some(p)) => p,
+        Ok(None) => {
+            // Auto-create profile if missing (e.g. user created outside register handler)
+            let role_str: Option<String> = sqlx::query_scalar(
+                r#"SELECT COALESCE(raw_user_meta_data->>'role', 'student') FROM auth.users WHERE id = $1"#,
+            )
+            .bind(user_id)
+            .fetch_optional(&state.db_pool)
+            .await
+            .ok()
+            .flatten();
+
+            let role: UserRole = role_str
+                .as_deref()
+                .and_then(|s| serde_json::from_str::<UserRole>(&format!("\"{}\"", s)).ok())
+                .unwrap_or(UserRole::Student);
+
+            if let Err(e) = sqlx::query("INSERT INTO profiles (id, role) VALUES ($1, $2)")
+                .bind(user_id)
+                .bind(&role)
+                .execute(&state.db_pool)
+                .await
+            {
+                tracing::error!("Failed to auto-create profile: {}", e);
+                return (StatusCode::INTERNAL_SERVER_ERROR, Json("Profil oluşturulamadı")).into_response();
+            }
+
+            (user_id, role)
+        }
         Err(e) => {
             tracing::error!("Login profile fetch error: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json("Profil bilgisi alınamadı")).into_response()
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json("Profil bilgisi alınamadı")).into_response();
         }
-    }
+    };
+
+    (
+        StatusCode::OK,
+        Json(LoginResponse {
+            id: profile_id,
+            role,
+            message: "Giriş başarılı".to_string(),
+        }),
+    )
+        .into_response()
 }
 
 // --- PROFILES ---
@@ -1030,6 +1060,53 @@ pub async fn get_income_levels(State(state): State<AppState>) -> impl IntoRespon
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(format!("Failed to fetch income_levels: {}", e)),
+            )
+                .into_response()
+        }
+    }
+}
+
+pub async fn create_department(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(body): Json<serde_json::Value>,
+) -> impl IntoResponse {
+    if auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Sadece yöneticiler departman oluşturabilir"),
+        )
+            .into_response();
+    }
+
+    let name = match body.get("name").and_then(|v| v.as_str()) {
+        Some(n) => n.trim().to_string(),
+        None => return (StatusCode::BAD_REQUEST, Json("'name' alanı zorunludur")).into_response(),
+    };
+
+    if name.is_empty() {
+        return (StatusCode::BAD_REQUEST, Json("Departman adı boş olamaz")).into_response();
+    }
+
+    match sqlx::query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
+        .bind(&name)
+        .execute(&state.db_pool)
+        .await
+    {
+        Ok(res) if res.rows_affected() == 0 => {
+            (StatusCode::CONFLICT, Json(format!("'{}' departmanı zaten mevcut", name)))
+                .into_response()
+        }
+        Ok(_) => (
+            StatusCode::CREATED,
+            Json(serde_json::json!({"name": name})),
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::error!("Failed to create department: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(format!("Departman oluşturulamadı: {}", e)),
             )
                 .into_response()
         }
