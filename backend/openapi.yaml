@@ -4,7 +4,7 @@ info:
   description: |
     Backend API for the scholarship matching system.
     All endpoints return JSON. Date fields are ISO 8601.
-  version: "1.0.0"
+  version: "2.0.0"
 servers:
   - url: http://localhost:8080
     description: Local development (direct)
@@ -228,6 +228,8 @@ paths:
       description: |
         Öğrenci kendi eşleşme sonuçlarını görüntüler.
         Aktif burslar arasında skor hesaplaması yapılır.
+        Skor 4 kategoride hesaplanır: demografik uyum, akademik uyum,
+        finansal ihtiyaç ve sosyal/ekstra-aktif.
       tags: [Öğrenciler]
       security:
         - BearerAuth: []
@@ -379,6 +381,10 @@ paths:
   /match/{student_id}:
     post:
       summary: Öğrenciyi aktif burslarla eşleştir (admin)
+      description: |
+        4 kategoride gelişmiş skorlama yapar: demografik uyum (%30),
+        akademik uyum (%30), finansal ihtiyaç (%25), sosyal/ekstra-aktif (%15).
+        Skor 0-100 arası normalize edilir.
       tags: [Eşleştirme]
       security:
         - BearerAuth: []
@@ -403,6 +409,31 @@ paths:
           description: Sadece yöneticiler eşleştirme yapabilir
         "404":
           description: Öğrenci bulunamadı (boş dizi döner)
+
+  /match/run:
+    post:
+      summary: Toplu eşleştirme çalıştır (admin)
+      description: |
+        Tüm aktif burslar için tüm öğrencilerle eşleştirme yapar.
+        Skorlar score_breakdown JSONB olarak matches tablosuna kaydedilir.
+      tags: [Eşleştirme]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Eşleştirme tamamlandı
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "5 eşleşme oluşturuldu"
+                  matched_count:
+                    type: integer
+        "403":
+          description: Sadece yöneticiler eşleştirme çalıştırabilir
 
   # ── Referans Tabloları ─────────────────────────────
   /cities:
@@ -508,9 +539,24 @@ components:
       description: Kullanıcı rolü
 
     IncomeLevel:
+      type: integer
+      enum: [0, 1, 2]
+      description: Gelir düzeyi (0=Düşük, 1=Orta, 2=Yüksek)
+
+    AcademicStanding:
       type: string
-      enum: [low, medium, high]
-      description: Gelir düzeyi
+      enum: [probation, good, honor, high_honor]
+      description: Akademik durum
+
+    ScholarshipType:
+      type: string
+      enum: [full_tuition, partial_tuition, living_stipend, one_time]
+      description: Burs türü
+
+    ApplicationStatus:
+      type: string
+      enum: [pending, reviewed, shortlisted, accepted, rejected]
+      description: Başvuru durumu
 
     # ── Nesneler ─────────────────────────────────────
     Profile:
@@ -553,6 +599,49 @@ components:
           type: string
           nullable: true
           description: Öğrencinin kendisi hakkında yazdığı metin
+        semester:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 12
+          description: Kaçıncı dönem (1-12)
+        family_income:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          description: Aylık aile geliri (TL)
+        household_size:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Hanedeki kişi sayısı
+        num_siblings_in_education:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Eğitimdeki kardeş sayısı
+        has_disability:
+          type: boolean
+          nullable: true
+          description: Engellilik durumu
+        is_orphan:
+          type: boolean
+          nullable: true
+          description: Yetim/öksüz durumu
+        is_refugee:
+          type: boolean
+          nullable: true
+          description: Mülteci durumu
+        academic_standing:
+          $ref: "#/components/schemas/AcademicStanding"
+          nullable: true
+        extracurricular_score:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 10
+          description: Sosyal/ekstra-aktif puanı (0-10)
         created_at:
           type: string
           format: date-time
@@ -607,7 +696,84 @@ components:
           items:
             $ref: "#/components/schemas/IncomeLevel"
           description: Boş array = tüm gelir düzeyleri
+        amount_per_year:
+          type: number
+          format: double
+          nullable: true
+          description: Yıllık burs miktarı (TL)
+        duration_months:
+          type: integer
+          nullable: true
+          description: Burs süresi (ay)
+        scholarship_type:
+          $ref: "#/components/schemas/ScholarshipType"
+          nullable: true
+        preferred_gender:
+          type: string
+          nullable: true
+          description: Cinsiyet tercihi (male/female, null=farketmez)
+        requires_essay:
+          type: boolean
+          nullable: true
+        requires_interview:
+          type: boolean
+          nullable: true
+        accepts_disability:
+          type: boolean
+          nullable: true
+        accepts_orphan:
+          type: boolean
+          nullable: true
+        accepts_refugee:
+          type: boolean
+          nullable: true
+        max_semester:
+          type: integer
+          nullable: true
+          description: Maksimum dönem sınırı
+        min_extracurricular_score:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 10
+        max_household_income:
+          type: number
+          format: double
+          nullable: true
+          description: Maksimum aile geliri sınırı (TL)
         created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ScholarshipApplication:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scholarship_id:
+          type: string
+          format: uuid
+        student_id:
+          type: string
+          format: uuid
+        essay_text:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/ApplicationStatus"
+        interview_score:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 100
+        essay_score:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 100
+        applied_at:
           type: string
           format: date-time
           nullable: true
@@ -621,6 +787,39 @@ components:
         score:
           type: number
           format: float
+          description: Toplam skor (0-100)
+
+    ScoreBreakdown:
+      type: object
+      properties:
+        demo:
+          type: number
+          format: float
+          description: Demografik uyum skoru
+        academic:
+          type: number
+          format: float
+          description: Akademik uyum skoru
+        need:
+          type: number
+          format: float
+          description: Finansal ihtiyaç skoru
+        extra:
+          type: number
+          format: float
+          description: Sosyal/ekstra-aktif skoru
+
+    MatchResultDetailed:
+      type: object
+      properties:
+        scholarship_id:
+          type: string
+          format: uuid
+        score:
+          type: number
+          format: float
+        breakdown:
+          $ref: "#/components/schemas/ScoreBreakdown"
 
     LoginRequest:
       type: object
@@ -687,6 +886,50 @@ components:
           minimum: 0
           maximum: 4
           description: "Not ortalaması (opsiyonel)"
+        semester:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 12
+          description: "Kaçıncı dönem (opsiyonel)"
+        family_income:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          description: "Aylık aile geliri TL (opsiyonel)"
+        household_size:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: "Hanedeki kişi sayısı (opsiyonel)"
+        num_siblings_in_education:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: "Eğitimdeki kardeş sayısı (opsiyonel)"
+        has_disability:
+          type: boolean
+          nullable: true
+          description: "Engellilik durumu (opsiyonel)"
+        is_orphan:
+          type: boolean
+          nullable: true
+          description: "Yetim/öksüz durumu (opsiyonel)"
+        is_refugee:
+          type: boolean
+          nullable: true
+          description: "Mülteci durumu (opsiyonel)"
+        academic_standing:
+          $ref: "#/components/schemas/AcademicStanding"
+          nullable: true
+          description: "Akademik durum (opsiyonel)"
+        extracurricular_score:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 10
+          description: "Sosyal/ekstra-aktif puanı 0-10 (opsiyonel)"
 
     RegisterResponse:
       type: object
@@ -736,6 +979,41 @@ components:
           description: "Departman adı. Benzer isimler otomatik eşleştirilir, yenisi eklenir."
         income_status:
           $ref: "#/components/schemas/IncomeLevel"
+        semester:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 12
+        family_income:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+        household_size:
+          type: integer
+          nullable: true
+          minimum: 1
+        num_siblings_in_education:
+          type: integer
+          nullable: true
+          minimum: 0
+        has_disability:
+          type: boolean
+          nullable: true
+        is_orphan:
+          type: boolean
+          nullable: true
+        is_refugee:
+          type: boolean
+          nullable: true
+        academic_standing:
+          $ref: "#/components/schemas/AcademicStanding"
+          nullable: true
+        extracurricular_score:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 10
 
     CreateScholarshipRequest:
       type: object
@@ -777,6 +1055,58 @@ components:
             $ref: "#/components/schemas/IncomeLevel"
           nullable: true
           description: Boş veya null = tüm gelir düzeyleri
+        amount_per_year:
+          type: number
+          format: double
+          nullable: true
+          description: Yıllık burs miktarı (TL)
+        duration_months:
+          type: integer
+          nullable: true
+          default: 12
+        scholarship_type:
+          $ref: "#/components/schemas/ScholarshipType"
+          nullable: true
+          default: partial_tuition
+        preferred_gender:
+          type: string
+          nullable: true
+          description: "Cinsiyet tercihi: male veya female (null = farketmez)"
+        requires_essay:
+          type: boolean
+          nullable: true
+          default: false
+        requires_interview:
+          type: boolean
+          nullable: true
+          default: false
+        accepts_disability:
+          type: boolean
+          nullable: true
+          default: true
+        accepts_orphan:
+          type: boolean
+          nullable: true
+          default: true
+        accepts_refugee:
+          type: boolean
+          nullable: true
+          default: true
+        max_semester:
+          type: integer
+          nullable: true
+          description: Maksimum dönem sınırı (null = sınırsız)
+        min_extracurricular_score:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 10
+          default: 0
+        max_household_income:
+          type: number
+          format: double
+          nullable: true
+          description: Maksimum aile geliri sınırı TL (null = sınırsız)
 
     UpdateStudentRequest:
       type: object
@@ -801,3 +1131,47 @@ components:
           type: string
           nullable: true
           description: "Hakkında metni (gönderilmezse değişmez)"
+        semester:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 12
+          description: "Dönem (gönderilmezse değişmez)"
+        family_income:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          description: "Aylık aile geliri TL (gönderilmezse değişmez)"
+        household_size:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: "Hane büyüklüğü (gönderilmezse değişmez)"
+        num_siblings_in_education:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: "Eğitimdeki kardeşler (gönderilmezse değişmez)"
+        has_disability:
+          type: boolean
+          nullable: true
+          description: "Engellilik (gönderilmezse değişmez)"
+        is_orphan:
+          type: boolean
+          nullable: true
+          description: "Yetim/öksüz (gönderilmezse değişmez)"
+        is_refugee:
+          type: boolean
+          nullable: true
+          description: "Mülteci (gönderilmezse değişmez)"
+        academic_standing:
+          $ref: "#/components/schemas/AcademicStanding"
+          nullable: true
+          description: "Akademik durum (gönderilmezse değişmez)"
+        extracurricular_score:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 10
+          description: "Sosyal puan (gönderilmezse değişmez)"

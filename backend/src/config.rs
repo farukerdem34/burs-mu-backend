@@ -6,10 +6,10 @@ pub struct AppConfig {
     pub server_port: u16,
     pub supabase_url: String,
     pub supabase_anon_key: String,
-    pub weight_city: f32,
-    pub weight_department: f32,
-    pub weight_gpa: f32,
-    pub weight_income: f32,
+    pub weight_demo: f32,
+    pub weight_academic: f32,
+    pub weight_need: f32,
+    pub weight_extra: f32,
     pub matching_interval_minutes: u64,
 }
 
@@ -24,22 +24,22 @@ impl AppConfig {
             supabase_url: env::var("SUPABASE_URL").expect("SUPABASE_URL must be set"),
             supabase_anon_key: env::var("SUPABASE_ANON_KEY")
                 .expect("SUPABASE_ANON_KEY must be set"),
-            weight_city: env::var("WEIGHT_CITY")
-                .unwrap_or_else(|_| "0.3".to_string())
+            weight_demo: env::var("WEIGHT_DEMO")
+                .unwrap_or_else(|_| "0.30".to_string())
                 .parse()
-                .expect("WEIGHT_CITY must be a valid f32"),
-            weight_department: env::var("WEIGHT_DEPARTMENT")
-                .unwrap_or_else(|_| "0.3".to_string())
+                .expect("WEIGHT_DEMO must be a valid f32"),
+            weight_academic: env::var("WEIGHT_ACADEMIC")
+                .unwrap_or_else(|_| "0.30".to_string())
                 .parse()
-                .expect("WEIGHT_DEPARTMENT must be a valid f32"),
-            weight_gpa: env::var("WEIGHT_GPA")
-                .unwrap_or_else(|_| "0.2".to_string())
+                .expect("WEIGHT_ACADEMIC must be a valid f32"),
+            weight_need: env::var("WEIGHT_NEED")
+                .unwrap_or_else(|_| "0.25".to_string())
                 .parse()
-                .expect("WEIGHT_GPA must be a valid f32"),
-            weight_income: env::var("WEIGHT_INCOME")
-                .unwrap_or_else(|_| "0.2".to_string())
+                .expect("WEIGHT_NEED must be a valid f32"),
+            weight_extra: env::var("WEIGHT_EXTRA")
+                .unwrap_or_else(|_| "0.15".to_string())
                 .parse()
-                .expect("WEIGHT_INCOME must be a valid f32"),
+                .expect("WEIGHT_EXTRA must be a valid f32"),
             matching_interval_minutes: env::var("MATCHING_INTERVAL_MINUTES")
                 .unwrap_or_else(|_| "30".to_string())
                 .parse()
