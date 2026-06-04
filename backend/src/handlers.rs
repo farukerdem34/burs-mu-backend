@@ -18,8 +18,17 @@ use crate::state::AppState;
 
 pub async fn match_student(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(student_id): Path<Uuid>,
 ) -> impl IntoResponse {
+    if auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Sadece yöneticiler eşleştirme yapabilir"),
+        )
+            .into_response();
+    }
+
     let student = match sqlx::query_as::<_, Student>(
         "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students WHERE profile_id = $1",
     )
@@ -317,7 +326,18 @@ pub async fn register(
         .into_response()
 }
 
-pub async fn get_profiles(State(state): State<AppState>) -> impl IntoResponse {
+pub async fn get_profiles(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> impl IntoResponse {
+    if auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Sadece yöneticiler profilleri görüntüleyebilir"),
+        )
+            .into_response();
+    }
+
     match sqlx::query_as::<_, Profile>("SELECT id, role, created_at, updated_at FROM profiles ORDER BY created_at DESC")
         .fetch_all(&state.db_pool)
         .await
@@ -433,7 +453,18 @@ pub async fn create_student(
     }
 }
 
-pub async fn get_students(State(state): State<AppState>) -> impl IntoResponse {
+pub async fn get_students(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> impl IntoResponse {
+    if auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Sadece yöneticiler öğrencileri görüntüleyebilir"),
+        )
+            .into_response();
+    }
+
     match sqlx::query_as::<_, Student>(
         "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students ORDER BY created_at DESC",
     )
@@ -466,6 +497,65 @@ pub async fn get_student(
         Ok(student) => (StatusCode::OK, Json(student)).into_response(),
         Err(_) => (StatusCode::NOT_FOUND, Json("Student not found")).into_response(),
     }
+}
+
+pub async fn get_student_matches(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(profile_id): Path<Uuid>,
+) -> impl IntoResponse {
+    if auth.id != profile_id && auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Kendi eşleşmelerinizi görüntüleyebilirsiniz"),
+        )
+            .into_response();
+    }
+
+    let student = match sqlx::query_as::<_, Student>(
+        "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at FROM students WHERE profile_id = $1",
+    )
+    .bind(profile_id)
+    .fetch_one(&state.db_pool)
+    .await
+    {
+        Ok(s) => s,
+        Err(_) => {
+            return (StatusCode::NOT_FOUND, Json("Öğrenci bulunamadı")).into_response();
+        }
+    };
+
+    let scholarships = match sqlx::query_as::<_, ScholarshipRule>(
+        "SELECT id, min_gpa::float4, target_cities, target_departments, target_income_levels FROM scholarships WHERE is_active = true",
+    )
+    .fetch_all(&state.db_pool)
+    .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            tracing::error!("Failed to fetch scholarships: {}", e);
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json("Burslar alınamadı")).into_response();
+        }
+    };
+
+    let mut results: Vec<MatchResult> = scholarships
+        .iter()
+        .filter_map(|rule| {
+            engine::calculate_match_score(&student, rule, &state.config)
+                .map(|score| MatchResult {
+                    scholarship_id: rule.id,
+                    score,
+                })
+        })
+        .collect();
+
+    results.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    (StatusCode::OK, Json(results)).into_response()
 }
 
 pub async fn update_student(
@@ -542,7 +632,18 @@ pub async fn update_student(
 
 // --- DONORS ---
 
-pub async fn get_donors(State(state): State<AppState>) -> impl IntoResponse {
+pub async fn get_donors(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> impl IntoResponse {
+    if auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Sadece yöneticiler burs verenleri görüntüleyebilir"),
+        )
+            .into_response();
+    }
+
     match sqlx::query_as::<_, Donor>(
         "SELECT profile_id, is_verified, created_at FROM donors ORDER BY created_at DESC",
     )
@@ -631,10 +732,10 @@ pub async fn create_scholarship(
     auth: AuthUser,
     Json(mut body): Json<CreateScholarshipRequest>,
 ) -> impl IntoResponse {
-    if auth.role != UserRole::Donor && auth.role != UserRole::Admin {
+    if auth.role != UserRole::Admin {
         return (
             StatusCode::FORBIDDEN,
-            Json("Sadece burs verenler burs oluşturabilir"),
+            Json("Sadece yöneticiler burs oluşturabilir"),
         )
             .into_response();
     }
