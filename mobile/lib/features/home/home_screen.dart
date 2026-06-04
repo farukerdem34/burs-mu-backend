@@ -30,7 +30,7 @@ class HomeScreen extends ConsumerWidget {
               delegate: SliverChildListDelegate([
                 _buildGreeting(context, authState),
                 const SizedBox(height: 24),
-                if (role == UserRole.student) ..._studentContent(context),
+                if (role == UserRole.student) ..._studentContent(context, authState.token),
                 if (role == UserRole.donor) ..._donorContent(context),
                 if (role == UserRole.admin) ..._adminContent(context),
               ]),
@@ -133,27 +133,14 @@ class HomeScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${authState.role?.name ?? 'Kullanıcı'} Paneli',
-                            style: GoogleFonts.inter(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            authState.role?.name ?? '',
-                            style: GoogleFonts.publicSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withAlpha(180),
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        authState.role?.name ?? '',
+                        style: GoogleFonts.publicSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withAlpha(200),
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ],
                   ),
@@ -175,32 +162,18 @@ class HomeScreen extends ConsumerWidget {
             ? 'Merhaba'
             : 'İyi Akşamlar';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$greeting,',
-          style: GoogleFonts.inter(
-            fontSize: 15,
-            fontWeight: FontWeight.w400,
-            color: cs.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          authState.role?.name ?? 'Kullanıcı',
-          style: GoogleFonts.notoSerif(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            height: 1.2,
-            color: cs.onSurface,
-          ),
-        ),
-      ],
+    return Text(
+      greeting,
+      style: GoogleFonts.notoSerif(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        height: 1.2,
+        color: cs.onSurface,
+      ),
     );
   }
 
-  List<Widget> _studentContent(BuildContext context) {
+  List<Widget> _studentContent(BuildContext context, String? profileId) {
     final cs = Theme.of(context).colorScheme;
 
     return [
@@ -232,7 +205,11 @@ class HomeScreen extends ConsumerWidget {
         iconBgColor: const Color(0xFF7B61FF),
         title: 'Profilimi Düzenle',
         subtitle: 'Öğrenci bilgilerinizi güncelleyin',
-        onTap: () => context.push('/students'),
+        onTap: () {
+          if (profileId != null) {
+            context.push('/students/$profileId/edit');
+          }
+        },
       ),
     ];
   }

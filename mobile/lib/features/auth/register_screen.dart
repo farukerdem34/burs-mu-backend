@@ -224,69 +224,71 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     return Column(
       children: [
         Row(
-          children: List.generate(steps.length, (i) {
-            final isActive = i == _currentStep;
-            final isPast = i < _currentStep;
-
-            return Expanded(
-              child: Row(
-                children: [
-                  if (i > 0)
-                    Expanded(
-                      child: Container(
-                        height: 2,
-                        color: isPast || isActive
-                            ? cs.primary
-                            : cs.outlineVariant.withAlpha(80),
+          children: List.generate(steps.length * 2 - 1, (i) {
+            if (i.isOdd) {
+              final stepIdx = i ~/ 2;
+              final isActive = stepIdx == _currentStep;
+              final isPast = stepIdx < _currentStep;
+              return Expanded(
+                child: Container(
+                  height: 2,
+                  color: isPast || isActive
+                      ? cs.primary
+                      : cs.outlineVariant.withAlpha(80),
+                ),
+              );
+            }
+            final stepIdx = i ~/ 2;
+            final isActive = stepIdx == _currentStep;
+            final isPast = stepIdx < _currentStep;
+            return Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isPast || isActive
+                    ? cs.primary
+                    : Colors.transparent,
+                border: Border.all(
+                  color: isPast || isActive
+                      ? cs.primary
+                      : cs.outlineVariant,
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: isPast
+                    ? Icon(Icons.check, size: 16, color: cs.onPrimary)
+                    : Text(
+                        '${stepIdx + 1}',
+                        style: GoogleFonts.publicSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isActive
+                              ? cs.onPrimary
+                              : cs.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isPast || isActive
-                          ? cs.primary
-                          : Colors.transparent,
-                      border: Border.all(
-                        color: isPast || isActive
-                            ? cs.primary
-                            : cs.outlineVariant,
-                        width: 2,
-                      ),
-                    ),
-                    child: Center(
-                      child: isPast
-                          ? Icon(Icons.check, size: 16, color: cs.onPrimary)
-                          : Text(
-                              '${i + 1}',
-                              style: GoogleFonts.publicSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: isActive
-                                    ? cs.onPrimary
-                                    : cs.onSurfaceVariant,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
               ),
             );
           }),
         ),
         const SizedBox(height: 8),
         Row(
-          children: List.generate(steps.length, (i) {
+          children: List.generate(steps.length * 2 - 1, (i) {
+            if (i.isOdd) {
+              return const Expanded(child: SizedBox());
+            }
+            final stepIdx = i ~/ 2;
             return Expanded(
               child: Text(
-                steps[i],
+                steps[stepIdx],
                 textAlign: TextAlign.center,
                 style: GoogleFonts.publicSans(
                   fontSize: 11,
                   fontWeight:
-                      i == _currentStep ? FontWeight.w600 : FontWeight.w500,
-                  color: i == _currentStep
+                      stepIdx == _currentStep ? FontWeight.w600 : FontWeight.w500,
+                  color: stepIdx == _currentStep
                       ? cs.primary
                       : cs.onSurfaceVariant,
                   letterSpacing: 0.5,
