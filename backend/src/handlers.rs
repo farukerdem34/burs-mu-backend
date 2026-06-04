@@ -32,7 +32,7 @@ pub async fn match_student(
 
     let student = match sqlx::query_as::<_, Student>(
         "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
-           semester, family_income, household_size, num_siblings_in_education,
+           semester, family_income::float8, household_size, num_siblings_in_education,
            has_disability, is_orphan, is_refugee, academic_standing::text, extracurricular_score
            FROM students WHERE profile_id = $1",
     )
@@ -56,7 +56,7 @@ pub async fn match_student(
     let scholarships = match sqlx::query_as::<_, ScholarshipRule>(
         "SELECT id, min_gpa::float4, target_cities, target_departments, target_income_levels,
            preferred_gender, accepts_disability, accepts_orphan, accepts_refugee,
-           max_semester, min_extracurricular_score, max_household_income, scholarship_type
+           max_semester, min_extracurricular_score, max_household_income::float8, scholarship_type
            FROM scholarships WHERE is_active = true",
     )
     .fetch_all(&state.db_pool)
@@ -287,7 +287,7 @@ pub async fn register(
             let department = find_or_create_department(&state, department_input).await;
 
             if let Err(e) = sqlx::query(
-                "INSERT INTO students (profile_id, gpa, city, department, income_status, semester, family_income, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+                "INSERT INTO students (profile_id, gpa, city, department, income_status, semester, family_income::float8, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
             )
             .bind(user_id)
             .bind(body.gpa)
@@ -426,7 +426,7 @@ pub async fn create_student(
     let department = find_or_create_department(&state, &body.department).await;
 
     match sqlx::query(
-        "INSERT INTO students (profile_id, gpa, city, department, income_status, semester, family_income, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+        "INSERT INTO students (profile_id, gpa, city, department, income_status, semester, family_income::float8, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
     )
     .bind(body.profile_id)
     .bind(body.gpa)
@@ -448,7 +448,7 @@ pub async fn create_student(
         Ok(_) => {
             let student = sqlx::query_as::<_, Student>(
                 "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
-           semester, family_income, household_size, num_siblings_in_education,
+           semester, family_income::float8, household_size, num_siblings_in_education,
            has_disability, is_orphan, is_refugee, academic_standing::text, extracurricular_score
            FROM students WHERE profile_id = $1",
             )
@@ -490,7 +490,7 @@ pub async fn get_students(
 
     match sqlx::query_as::<_, Student>(
         "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
-           semester, family_income, household_size, num_siblings_in_education,
+           semester, family_income::float8, household_size, num_siblings_in_education,
            has_disability, is_orphan, is_refugee, academic_standing::text, extracurricular_score
            FROM students ORDER BY created_at DESC",
     )
@@ -515,7 +515,7 @@ pub async fn get_student(
 ) -> impl IntoResponse {
     match sqlx::query_as::<_, Student>(
         "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
-           semester, family_income, household_size, num_siblings_in_education,
+           semester, family_income::float8, household_size, num_siblings_in_education,
            has_disability, is_orphan, is_refugee, academic_standing::text, extracurricular_score
            FROM students WHERE profile_id = $1",
     )
@@ -534,7 +534,7 @@ pub async fn get_student_matches(
 ) -> impl IntoResponse {
     let student = match sqlx::query_as::<_, Student>(
         "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
-           semester, family_income, household_size, num_siblings_in_education,
+           semester, family_income::float8, household_size, num_siblings_in_education,
            has_disability, is_orphan, is_refugee, academic_standing::text, extracurricular_score
            FROM students WHERE profile_id = $1",
     )
@@ -551,7 +551,7 @@ pub async fn get_student_matches(
     let scholarships = match sqlx::query_as::<_, ScholarshipRule>(
         "SELECT id, min_gpa::float4, target_cities, target_departments, target_income_levels,
            preferred_gender, accepts_disability, accepts_orphan, accepts_refugee,
-           max_semester, min_extracurricular_score, max_household_income, scholarship_type
+           max_semester, min_extracurricular_score, max_household_income::float8, scholarship_type
            FROM scholarships WHERE is_active = true",
     )
     .fetch_all(&state.db_pool)
@@ -641,7 +641,7 @@ pub async fn update_student(
                 return (StatusCode::BAD_REQUEST, Json("İlk kayıtta şehir, departman ve gelir düzeyi zorunludur")).into_response();
             }
             if let Err(e) = sqlx::query(
-                "INSERT INTO students (profile_id, gpa, city, department, income_status, about, semester, family_income, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
+                "INSERT INTO students (profile_id, gpa, city, department, income_status, about, semester, family_income::float8, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
             )
             .bind(profile_id)
             .bind(body.gpa)
@@ -669,7 +669,7 @@ pub async fn update_student(
 
     let student = sqlx::query_as::<_, Student>(
         "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
-           semester, family_income, household_size, num_siblings_in_education,
+           semester, family_income::float8, household_size, num_siblings_in_education,
            has_disability, is_orphan, is_refugee, academic_standing::text, extracurricular_score
            FROM students WHERE profile_id = $1",
     )
@@ -819,7 +819,7 @@ pub async fn create_scholarship(
     }
 
     match sqlx::query(
-        "INSERT INTO scholarships (donor_id, title, quota, is_active, min_gpa, target_cities, target_departments, target_income_levels, amount_per_year, duration_months, scholarship_type, preferred_gender, requires_essay, requires_interview, accepts_disability, accepts_orphan, accepts_refugee, max_semester, min_extracurricular_score, max_household_income) VALUES ($1, $2, COALESCE($3, 1), COALESCE($4, true), $5, $6, $7, $8, $9, COALESCE($10, 12), $11, $12, COALESCE($13, false), COALESCE($14, false), COALESCE($15, true), COALESCE($16, true), COALESCE($17, true), $18, COALESCE($19, 0), $20)",
+        "INSERT INTO scholarships (donor_id, title, quota, is_active, min_gpa, target_cities, target_departments, target_income_levels, amount_per_year::float8, duration_months, scholarship_type, preferred_gender, requires_essay, requires_interview, accepts_disability, accepts_orphan, accepts_refugee, max_semester, min_extracurricular_score, max_household_income) VALUES ($1, $2, COALESCE($3, 1), COALESCE($4, true), $5, $6, $7, $8, $9, COALESCE($10, 12), $11, $12, COALESCE($13, false), COALESCE($14, false), COALESCE($15, true), COALESCE($16, true), COALESCE($17, true), $18, COALESCE($19, 0), $20)",
     )
     .bind(donor_id)
     .bind(&body.title)
@@ -850,10 +850,10 @@ pub async fn create_scholarship(
             let scholarship = sqlx::query_as::<_, Scholarship>(
                 "SELECT id, donor_id, title, quota, is_active, min_gpa::float4,
            target_cities, target_departments, target_income_levels,
-           amount_per_year, duration_months, scholarship_type,
+           amount_per_year::float8, duration_months, scholarship_type,
            preferred_gender, requires_essay, requires_interview,
            accepts_disability, accepts_orphan, accepts_refugee,
-           max_semester, min_extracurricular_score, max_household_income, created_at
+           max_semester, min_extracurricular_score, max_household_income::float8, created_at
            FROM scholarships WHERE title = $1 ORDER BY created_at DESC LIMIT 1",
             )
             .bind(&body.title)
@@ -956,10 +956,10 @@ pub async fn get_scholarships(State(state): State<AppState>) -> impl IntoRespons
     match sqlx::query_as::<_, Scholarship>(
         "SELECT id, donor_id, title, quota, is_active, min_gpa::float4,
            target_cities, target_departments, target_income_levels,
-           amount_per_year, duration_months, scholarship_type,
+           amount_per_year::float8, duration_months, scholarship_type,
            preferred_gender, requires_essay, requires_interview,
            accepts_disability, accepts_orphan, accepts_refugee,
-           max_semester, min_extracurricular_score, max_household_income, created_at
+           max_semester, min_extracurricular_score, max_household_income::float8, created_at
            FROM scholarships ORDER BY created_at DESC",
     )
     .fetch_all(&state.db_pool)
@@ -984,10 +984,10 @@ pub async fn get_scholarship(
     match sqlx::query_as::<_, Scholarship>(
         "SELECT id, donor_id, title, quota, is_active, min_gpa::float4,
            target_cities, target_departments, target_income_levels,
-           amount_per_year, duration_months, scholarship_type,
+           amount_per_year::float8, duration_months, scholarship_type,
            preferred_gender, requires_essay, requires_interview,
            accepts_disability, accepts_orphan, accepts_refugee,
-           max_semester, min_extracurricular_score, max_household_income, created_at
+           max_semester, min_extracurricular_score, max_household_income::float8, created_at
            FROM scholarships WHERE id = $1",
     )
     .bind(id)

@@ -7,10 +7,10 @@ pub async fn run_matching(state: &AppState) -> Result<usize, String> {
     let scholarships = sqlx::query_as::<_, Scholarship>(
         r#"SELECT id, donor_id, title, quota, is_active, min_gpa::float4,
            target_cities, target_departments, target_income_levels,
-           amount_per_year, duration_months, scholarship_type,
+           amount_per_year::float8, duration_months, scholarship_type,
            preferred_gender, requires_essay, requires_interview,
            accepts_disability, accepts_orphan, accepts_refugee,
-           max_semester, min_extracurricular_score, max_household_income, created_at
+           max_semester, min_extracurricular_score, max_household_income::float8, created_at
            FROM scholarships WHERE is_active = true"#,
     )
     .fetch_all(&state.db_pool)
@@ -47,7 +47,7 @@ async fn match_scholarship(
 ) -> Result<usize, String> {
     let students = sqlx::query_as::<_, Student>(
         r#"SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
-           semester, family_income, household_size, num_siblings_in_education,
+           semester, family_income::float8, household_size, num_siblings_in_education,
            has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score
            FROM students"#,
     )
