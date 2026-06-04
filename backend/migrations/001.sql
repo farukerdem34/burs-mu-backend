@@ -109,7 +109,7 @@ CREATE TABLE public.scholarships (
     title TEXT NOT NULL,
     quota INTEGER NOT NULL DEFAULT 1,
     is_active BOOLEAN DEFAULT TRUE,
-    min_gpa NUMERIC(3,2) DEFAULT 0.00,
+    min_gpa NUMERIC(3,2) DEFAULT 0.00 CHECK (min_gpa >= 0.00 AND min_gpa <= 4.00),
     target_cities TEXT[] DEFAULT '{}',
     target_departments TEXT[] DEFAULT '{}',
     target_income_levels SMALLINT[] DEFAULT '{}',

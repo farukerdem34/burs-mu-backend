@@ -269,6 +269,12 @@ pub async fn register(
 
     // If student role with all required fields, create student record
     if body.role == crate::models::UserRole::Student {
+        if let Some(gpa) = body.gpa {
+            if let Err(msg) = validate_gpa(gpa, "GPA") {
+                return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
+            }
+        }
+
         if let (Some(city), Some(department_input), Some(income_status)) =
             (&body.city, &body.department, &body.income_status)
         {
@@ -396,6 +402,14 @@ async fn validate_cities(state: &AppState, cities: &[String]) -> Result<(), Stri
     Ok(())
 }
 
+fn validate_gpa(gpa: f32, field: &str) -> Result<(), String> {
+    if gpa < 0.0 || gpa > 4.0 {
+        Err(format!("{} 0.0 ile 4.0 arasında olmalıdır", field))
+    } else {
+        Ok(())
+    }
+}
+
 pub async fn create_student(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -411,6 +425,12 @@ pub async fn create_student(
 
     if let Err(msg) = validate_city(&state, &body.city).await {
         return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
+    }
+
+    if let Some(gpa) = body.gpa {
+        if let Err(msg) = validate_gpa(gpa, "GPA") {
+            return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
+        }
     }
 
     let department = find_or_create_department(&state, &body.department).await;
@@ -562,6 +582,12 @@ pub async fn update_student(
             Json("Kendi hesabınızı düzenleyebilirsiniz"),
         )
             .into_response();
+    }
+
+    if let Some(gpa) = body.gpa {
+        if let Err(msg) = validate_gpa(gpa, "GPA") {
+            return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
+        }
     }
 
     let department = if let Some(ref dept) = body.department {
@@ -739,6 +765,12 @@ pub async fn create_scholarship(
             if let Err(msg) = validate_cities(&state, cities).await {
                 return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
             }
+        }
+    }
+
+    if let Some(min_gpa) = body.min_gpa {
+        if let Err(msg) = validate_gpa(min_gpa, "Minimum GPA") {
+            return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
         }
     }
 
