@@ -259,13 +259,10 @@ pub async fn register(
 
     // If student role with all required fields, create student record
     if body.role == crate::models::UserRole::Student {
-        if let (Some(city), Some(department), Some(income_status)) =
+        if let (Some(city), Some(department_input), Some(income_status)) =
             (&body.city, &body.department, &body.income_status)
         {
-            let _ = sqlx::query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
-                .bind(department)
-                .execute(&state.db_pool)
-                .await;
+            let department = find_or_create_department(&state, department_input).await;
 
             if let Err(e) = sqlx::query(
                 "INSERT INTO students (profile_id, gpa, city, department, income_status) VALUES ($1, $2, $3, $4, $5)",
@@ -273,7 +270,7 @@ pub async fn register(
             .bind(user_id)
             .bind(body.gpa)
             .bind(city)
-            .bind(department)
+            .bind(&department)
             .bind(income_status)
             .execute(&state.db_pool)
             .await
@@ -395,13 +392,15 @@ pub async fn create_student(
         return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
     }
 
+    let department = find_or_create_department(&state, &body.department).await;
+
     match sqlx::query(
         "INSERT INTO students (profile_id, gpa, city, department, income_status) VALUES ($1, $2, $3, $4, $5)",
     )
     .bind(body.profile_id)
     .bind(body.gpa)
     .bind(&body.city)
-    .bind(&body.department)
+    .bind(&department)
     .bind(&body.income_status)
     .execute(&state.db_pool)
     .await
@@ -483,19 +482,18 @@ pub async fn update_student(
             .into_response();
     }
 
-    if let Some(ref department) = body.department {
-        let _ = sqlx::query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
-            .bind(department)
-            .execute(&state.db_pool)
-            .await;
-    }
+    let department = if let Some(ref dept) = body.department {
+        Some(find_or_create_department(&state, dept).await)
+    } else {
+        None
+    };
 
     let updated = sqlx::query(
         "UPDATE students SET gpa = COALESCE($1, gpa), city = COALESCE($2, city), department = COALESCE($3, department), income_status = COALESCE($4, income_status), about = COALESCE($5, about) WHERE profile_id = $6",
     )
     .bind(body.gpa)
     .bind(&body.city)
-    .bind(&body.department)
+    .bind(&department)
     .bind(&body.income_status)
     .bind(&body.about)
     .bind(profile_id)
@@ -517,7 +515,7 @@ pub async fn update_student(
             .bind(profile_id)
             .bind(body.gpa)
             .bind(body.city.as_deref())
-            .bind(body.department.as_deref())
+            .bind(department.as_deref())
             .bind(&body.income_status)
             .bind(&body.about)
             .execute(&state.db_pool)
@@ -631,7 +629,7 @@ pub async fn verify_donor(
 pub async fn create_scholarship(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(body): Json<CreateScholarshipRequest>,
+    Json(mut body): Json<CreateScholarshipRequest>,
 ) -> impl IntoResponse {
     if auth.role != UserRole::Donor && auth.role != UserRole::Admin {
         return (
@@ -651,14 +649,11 @@ pub async fn create_scholarship(
         }
     }
 
-    // Auto-insert new departments into the departments table
-    if let Some(ref deps) = body.target_departments {
+    // Resolve department names: find existing similar or insert new
+    if let Some(ref mut deps) = body.target_departments {
         if !deps.is_empty() {
-            for dep in deps {
-                let _ = sqlx::query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
-                    .bind(dep)
-                    .execute(&state.db_pool)
-                    .await;
+            for dep in deps.iter_mut() {
+                *dep = find_or_create_department(&state, dep).await;
             }
         }
     }
@@ -708,6 +703,44 @@ pub async fn create_scholarship(
                 .into_response()
         }
     }
+}
+
+fn normalize_department(s: &str) -> String {
+    s.chars()
+        .map(|c| match c {
+            'ü' | 'û' | 'Ü' | 'Û' => 'u',
+            'ö' | 'ô' | 'Ö' | 'Ô' => 'o',
+            'ç' | 'Ç' => 'c',
+            'ş' | 'Ş' => 's',
+            'ğ' | 'Ğ' => 'g',
+            'ı' | 'I' | 'İ' => 'i',
+            _ => c.to_ascii_lowercase(),
+        })
+        .collect()
+}
+
+async fn find_or_create_department(state: &AppState, department: &str) -> String {
+    let departments = sqlx::query_as::<_, Department>("SELECT name FROM departments")
+        .fetch_all(&state.db_pool)
+        .await
+        .unwrap_or_default();
+
+    let normalized_input = normalize_department(department);
+
+    for existing in &departments {
+        let similarity =
+            strsim::normalized_levenshtein(&normalized_input, &normalize_department(&existing.name));
+        if similarity > 0.8 {
+            return existing.name.clone();
+        }
+    }
+
+    let _ = sqlx::query("INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO NOTHING")
+        .bind(department)
+        .execute(&state.db_pool)
+        .await;
+
+    department.to_string()
 }
 
 pub async fn get_scholarships(State(state): State<AppState>) -> impl IntoResponse {

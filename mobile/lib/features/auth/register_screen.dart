@@ -18,31 +18,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _departmentController = TextEditingController();
   final _gpaController = TextEditingController();
 
   UserRole _role = UserRole.student;
   String? _selectedCity;
-  String? _selectedDepartment;
   IncomeLevel? _incomeStatus;
   List<String> _cities = [];
-  List<String> _departments = [];
 
   @override
   void initState() {
     super.initState();
-    _loadReferences();
+    _loadCities();
   }
 
-  Future<void> _loadReferences() async {
+  Future<void> _loadCities() async {
     final dio = ref.read(dioProvider);
     final refService = ReferenceService(dio);
     try {
       final cities = await refService.getCities();
-      final departments = await refService.getDepartments();
-      setState(() {
-        _cities = cities.map((e) => e.name ?? '').where((n) => n.isNotEmpty).toList();
-        _departments = departments.map((e) => e.name ?? '').where((n) => n.isNotEmpty).toList();
-      });
+      if (mounted) {
+        setState(() {
+          _cities = cities.map((e) => e.name ?? '').where((n) => n.isNotEmpty).toList();
+        });
+      }
     } catch (_) {}
   }
 
@@ -50,6 +49,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _departmentController.dispose();
     _gpaController.dispose();
     super.dispose();
   }
@@ -62,7 +62,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       password: _passwordController.text,
       role: _role,
       city: _role == UserRole.student ? _selectedCity : null,
-      department: _role == UserRole.student ? _selectedDepartment : null,
+      department: _role == UserRole.student ? _departmentController.text.trim() : null,
       incomeStatus: _role == UserRole.student ? _incomeStatus : null,
       gpa: _role == UserRole.student && _gpaController.text.isNotEmpty
           ? double.tryParse(_gpaController.text)
@@ -126,15 +126,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                       .toList(),
                   onChanged: (v) => setState(() => _selectedCity = v),
+                  validator: (v) => v == null ? 'Şehir seçin' : null,
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedDepartment,
-                  decoration: const InputDecoration(labelText: 'Bölüm'),
-                  items: _departments
-                      .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                      .toList(),
-                  onChanged: (v) => setState(() => _selectedDepartment = v),
+                TextFormField(
+                  controller: _departmentController,
+                  decoration: const InputDecoration(
+                    labelText: 'Bölüm',
+                    hintText: 'Örn: Bilgisayar Mühendisliği',
+                  ),
+                  validator: (v) =>
+                      v != null && v.trim().isNotEmpty ? null : 'Bölüm girin',
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<IncomeLevel>(
