@@ -19,17 +19,8 @@ use crate::state::AppState;
 
 pub async fn match_student(
     State(state): State<AppState>,
-    auth: AuthUser,
     Path(student_id): Path<Uuid>,
 ) -> impl IntoResponse {
-    if auth.role != UserRole::Admin {
-        return (
-            StatusCode::FORBIDDEN,
-            Json("Sadece yöneticiler eşleştirme yapabilir"),
-        )
-            .into_response();
-    }
-
     let student = match sqlx::query_as::<_, Student>(
         "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
            semester, family_income::float8, household_size, num_siblings_in_education,
@@ -489,16 +480,7 @@ pub async fn create_student(
 
 pub async fn get_students(
     State(state): State<AppState>,
-    auth: AuthUser,
 ) -> impl IntoResponse {
-    if auth.role != UserRole::Admin {
-        return (
-            StatusCode::FORBIDDEN,
-            Json("Sadece yöneticiler öğrencileri görüntüleyebilir"),
-        )
-            .into_response();
-    }
-
     match sqlx::query_as::<_, Student>(
         "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
            semester, family_income::float8, household_size, num_siblings_in_education,

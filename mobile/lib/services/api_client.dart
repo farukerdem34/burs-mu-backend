@@ -27,11 +27,6 @@ class ApiClient {
         handler.next(options);
       },
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401) {
-          try {
-            await SecureStorage.clear();
-          } catch (_) {}
-        }
         handler.next(error);
       },
     ));
