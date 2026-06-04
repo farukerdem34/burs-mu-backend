@@ -133,7 +133,7 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
                 initialValue: _incomeStatus,
                 decoration: const InputDecoration(labelText: 'Gelir Düzeyi'),
                 items: IncomeLevel.values
-                    .map((l) => DropdownMenuItem(value: l, child: Text(l.name)))
+                    .map((l) => DropdownMenuItem(value: l, child: Text(l.displayName)))
                     .toList(),
                 onChanged: (v) => setState(() => _incomeStatus = v),
               ),

@@ -39,7 +39,7 @@ class StudentDetailScreen extends ConsumerWidget {
                     ),
                     _infoRow(
                       'Gelir Düzeyi',
-                      student.incomeStatus?.name ?? '-',
+                      student.incomeStatus?.displayName ?? '-',
                     ),
                     if (student.about != null && student.about!.isNotEmpty)
                       Padding(

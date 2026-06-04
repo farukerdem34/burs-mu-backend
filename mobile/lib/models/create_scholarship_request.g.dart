@@ -41,7 +41,7 @@ Map<String, dynamic> _$CreateScholarshipRequestToJson(
 };
 
 const _$IncomeLevelEnumMap = {
-  IncomeLevel.low: 'low',
-  IncomeLevel.medium: 'medium',
-  IncomeLevel.high: 'high',
+  IncomeLevel.low: 0,
+  IncomeLevel.medium: 1,
+  IncomeLevel.high: 2,
 };

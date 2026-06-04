@@ -192,7 +192,7 @@ class _ScholarshipCreateScreenState
                 runSpacing: 4,
                 children: IncomeLevel.values
                     .map((l) => FilterChip(
-                          label: Text(l.name),
+                          label: Text(l.displayName),
                           selected: _selectedIncomeLevels.contains(l),
                           onSelected: (sel) {
                             setState(() {

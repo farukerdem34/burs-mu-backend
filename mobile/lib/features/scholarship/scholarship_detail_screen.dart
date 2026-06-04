@@ -67,7 +67,7 @@ class ScholarshipDetailScreen extends ConsumerWidget {
                         spacing: 8,
                         runSpacing: 4,
                         children: scholarship.targetIncomeLevels!
-                            .map((l) => Chip(label: Text(l.name)))
+                            .map((l) => Chip(label: Text(l.displayName)))
                             .toList(),
                       )
                     : const Text('Yok'),
