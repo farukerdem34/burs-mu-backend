@@ -10,8 +10,8 @@ CREATE TABLE public.departments (
   CONSTRAINT departments_pkey PRIMARY KEY (name)
 );
 CREATE TABLE public.income_levels (
-  name text NOT NULL,
-  CONSTRAINT income_levels_pkey PRIMARY KEY (name)
+  value integer NOT NULL,
+  CONSTRAINT income_levels_pkey PRIMARY KEY (value)
 );
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE public.students (
   gpa numeric CHECK (gpa >= 0.00 AND gpa <= 4.00),
   city text NOT NULL,
   department text NOT NULL,
-  income_status USER-DEFINED NOT NULL CHECK (check_income_level(income_status)),
+  income_status smallint NOT NULL CHECK (income_status = ANY (ARRAY[0, 1, 2])),
   created_at timestamp with time zone DEFAULT now(),
   about text,
   CONSTRAINT students_pkey PRIMARY KEY (profile_id),
@@ -40,10 +40,10 @@ CREATE TABLE public.scholarships (
   title text NOT NULL,
   quota integer NOT NULL DEFAULT 1,
   is_active boolean DEFAULT true,
-  min_gpa numeric DEFAULT 0.00,
+  min_gpa numeric DEFAULT 0.00 CHECK (min_gpa >= 0.00 AND min_gpa <= 4.00),
   target_cities ARRAY DEFAULT '{}'::text[] CHECK (check_cities(target_cities)),
   target_departments ARRAY DEFAULT '{}'::text[] CHECK (check_departments(target_departments)),
-  target_income_levels ARRAY DEFAULT '{}'::income_level[] CHECK (check_income_levels(target_income_levels)),
+  target_income_levels ARRAY DEFAULT '{}'::smallint[],
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT scholarships_pkey PRIMARY KEY (id),
   CONSTRAINT scholarships_donor_id_fkey FOREIGN KEY (donor_id) REFERENCES public.profiles(id)
