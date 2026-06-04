@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/match_provider.dart';
 import '../../models/user_role.dart';
 import '../auth/login_screen.dart';
 
@@ -32,7 +33,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 if (role == UserRole.student) ..._studentContent(context, authState.token),
                 if (role == UserRole.donor) ..._donorContent(context),
-                if (role == UserRole.admin) ..._adminContent(context),
+                if (role == UserRole.admin) ..._adminContent(context, ref),
               ]),
             ),
           ),
@@ -120,8 +121,8 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         child: Center(
                           child: Text(
-                            (authState.role?.name.isNotEmpty == true
-                                    ? authState.role!.name[0]
+                            (authState.role?.displayName.isNotEmpty == true
+                                    ? authState.role!.displayName[0]
                                     : '?')
                                 .toUpperCase(),
                             style: GoogleFonts.publicSans(
@@ -134,7 +135,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        authState.role?.name ?? '',
+                        authState.role?.displayName ?? '',
                         style: GoogleFonts.publicSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -242,7 +243,7 @@ class HomeScreen extends ConsumerWidget {
     ];
   }
 
-  List<Widget> _adminContent(BuildContext context) {
+  List<Widget> _adminContent(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
 
     return [
@@ -266,6 +267,16 @@ class HomeScreen extends ConsumerWidget {
         onTap: () => context.push('/donors'),
       ),
       const SizedBox(height: 12),
+
+      _buildActionCard(
+        context,
+        icon: Icons.add_circle,
+        iconBgColor: const Color(0xFF3068CC),
+        title: 'Yeni Burs Oluştur',
+        subtitle: 'Yeni bir burs ilanı ekleyin',
+        onTap: () => context.push('/scholarships/create'),
+      ),
+      const SizedBox(height: 12),
       _buildActionCard(
         context,
         icon: Icons.category,
@@ -273,6 +284,32 @@ class HomeScreen extends ConsumerWidget {
         title: 'Departman Yönetimi',
         subtitle: 'Bölümleri ekleyin veya kaldırın',
         onTap: () => context.push('/admin/departments'),
+      ),
+      const SizedBox(height: 24),
+      _buildSectionTitle('Eşleştirme', context),
+      const SizedBox(height: 12),
+      _buildActionCard(
+        context,
+        icon: Icons.sync,
+        iconBgColor: const Color(0xFFE11D48),
+        title: 'Eşleştirmeyi Çalıştır',
+        subtitle: 'Tüm öğrenciler için eşleştirme yapın',
+        onTap: () async {
+          try {
+            await ref.read(matchServiceProvider).runMatching();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Eşleştirme başlatıldı')),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Hata: $e')),
+              );
+            }
+          }
+        },
       ),
     ];
   }

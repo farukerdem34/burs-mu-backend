@@ -1,11 +1,11 @@
 # IncomeLevel
 
-Gelir düzeyi
+Gelir düzeyi (0=Düşük, 1=Orta, 2=Yüksek)
 
 **Type:** enum
 
 ## Values
 
-- `low`
-- `medium`
-- `high`
+- `0`
+- `1`
+- `2`

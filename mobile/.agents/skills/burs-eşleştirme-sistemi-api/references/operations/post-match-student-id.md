@@ -4,6 +4,11 @@
 **Öğrenciyi aktif burslarla eşleştir (admin)**
 **Operation ID:** `post--match-{student_id}`
 
+4 kategoride gelişmiş skorlama yapar: demografik uyum (%30),
+akademik uyum (%30), finansal ihtiyaç (%25), sosyal/ekstra-aktif (%15).
+Skor 0-100 arası normalize edilir.
+
+
 ## Parameters
 
 | Name | In | Type | Required | Description |

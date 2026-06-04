@@ -8,4 +8,15 @@ enum UserRole {
   donor,
   @JsonValue('admin')
   admin;
+
+  String get displayName {
+    switch (this) {
+      case UserRole.student:
+        return 'Öğrenci';
+      case UserRole.donor:
+        return 'Bağışçı';
+      case UserRole.admin:
+        return 'Admin';
+    }
+  }
 }

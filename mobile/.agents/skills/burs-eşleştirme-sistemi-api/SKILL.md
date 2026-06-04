@@ -2,7 +2,7 @@
 name: burs-eşleştirme-sistemi-api
 description: Backend API for the scholarship matching system.. Use when working with the Burs Eşleştirme Sistemi API or when the user needs to interact with this API.
 metadata:
-  api-version: "1.0.0"
+  api-version: "2.0.0"
   openapi-version: "3.0.3"
 ---
 
@@ -18,8 +18,8 @@ This API documentation is split into multiple files for on-demand loading.
 ```
 references/
 ├── resources/      # 7 resource index files
-├── operations/     # 22 operation detail files
-└── schemas/        # 12 schema groups, 16 schema files
+├── operations/     # 23 operation detail files
+└── schemas/        # 15 schema groups, 22 schema files
 ```
 
 **Navigation flow:**
@@ -45,4 +45,4 @@ Supported methods: **BearerAuth**. See `references/authentication.md` for detail
 - **Donorlar** → `references/resources/Donorlar.md` (3 ops)
 - **Burslar** → `references/resources/Burslar.md` (3 ops)
 - **Auth** → `references/resources/Auth.md` (2 ops)
-- **Eşleştirme** → `references/resources/Eşleştirme.md` (1 ops)
+- **Eşleştirme** → `references/resources/Eşleştirme.md` (2 ops)

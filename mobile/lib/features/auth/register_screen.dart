@@ -375,7 +375,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 items: UserRole.values
                     .where((r) => r != UserRole.admin)
                     .map((r) => DropdownMenuItem(
-                        value: r, child: Text(r.name)))
+                        value: r, child: Text(r.displayName)))
                     .toList(),
                 onChanged: (v) => setState(() => _role = v!),
               ),
@@ -609,7 +609,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             children: [
               _buildInfoRow('E-posta', _emailController.text, cs),
               const SizedBox(height: 16),
-              _buildInfoRow('Rol', _role.name, cs),
+              _buildInfoRow('Rol', _role.displayName, cs),
               if (_role == UserRole.student) ...[
                 const SizedBox(height: 16),
                 _buildInfoRow('Şehir', _selectedCity ?? '-', cs),

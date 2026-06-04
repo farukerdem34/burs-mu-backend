@@ -10,10 +10,11 @@ class SecureStorage {
   static final Map<String, String> _fallback = {};
 
   static Future<void> saveToken(String token) async {
+    _fallback[_tokenKey] = token;
     try {
       await _storage.write(key: _tokenKey, value: token);
     } catch (_) {
-      _fallback[_tokenKey] = token;
+      // fallback already written
     }
   }
 
@@ -26,10 +27,11 @@ class SecureStorage {
   }
 
   static Future<void> saveRole(String role) async {
+    _fallback[_roleKey] = role;
     try {
       await _storage.write(key: _roleKey, value: role);
     } catch (_) {
-      _fallback[_roleKey] = role;
+      // fallback already written
     }
   }
 

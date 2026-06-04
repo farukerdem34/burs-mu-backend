@@ -23,6 +23,10 @@ class ReferenceService {
         .toList();
   }
 
+  Future<void> deleteDepartment(String name) async {
+    await _dio.delete('${ApiConstants.departments}/$name');
+  }
+
   Future<List<NamedItem>> getIncomeLevels() async {
     final response =
         await _dio.get<List<dynamic>>(ApiConstants.incomeLevels);

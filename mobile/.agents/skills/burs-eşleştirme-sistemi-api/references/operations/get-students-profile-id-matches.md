@@ -6,6 +6,8 @@
 
 Öğrenci kendi eşleşme sonuçlarını görüntüler.
 Aktif burslar arasında skor hesaplaması yapılır.
+Skor 4 kategoride hesaplanır: demografik uyum, akademik uyum,
+finansal ihtiyaç ve sosyal/ekstra-aktif.
 
 
 ## Parameters

@@ -112,7 +112,8 @@ class _DepartmentManageScreenState
 
     try {
       final dio = ref.read(dioProvider);
-      await dio.delete('${ApiConstants.departments}/$name');
+      final refService = ReferenceService(dio);
+      await refService.deleteDepartment(name);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('"$name" silindi')),

@@ -1,4 +1,4 @@
-# MatchResult
+# MatchResultDetailed
 
 **Type:** object
 
@@ -7,5 +7,6 @@
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `scholarship_id` | string (uuid) | No |  |
-| `score` | number (float) | No | Toplam skor (0-100) |
+| `score` | number (float) | No |  |
+| `breakdown` | [ScoreBreakdown](ScoreBreakdown.md) | No |  |
 

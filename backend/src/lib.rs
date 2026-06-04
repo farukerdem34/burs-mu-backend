@@ -14,8 +14,8 @@ pub fn build_router(state: state::AppState) -> Router {
     let cors = CorsLayer::permissive();
 
     Router::new()
-        .route("/match/:student_id", post(handlers::match_student))
         .route("/match/run", post(handlers::run_matching_handler))
+        .route("/match/:student_id", post(handlers::match_student))
         .route("/register", post(handlers::register))
         .route("/login", post(handlers::login))
         .route(
@@ -43,7 +43,7 @@ pub fn build_router(state: state::AppState) -> Router {
         .route("/cities", get(handlers::get_cities))
         .route(
             "/departments",
-            get(handlers::get_departments).post(handlers::create_department),
+            post(handlers::create_department).get(handlers::get_departments),
         )
         .route("/departments/:name", delete(handlers::delete_department))
         .route("/income-levels", get(handlers::get_income_levels))

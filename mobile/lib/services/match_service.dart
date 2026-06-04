@@ -15,4 +15,8 @@ class MatchService {
         .map((e) => MatchResult.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<void> runMatching() async {
+    await _dio.post('${ApiConstants.match}/run');
+  }
 }
