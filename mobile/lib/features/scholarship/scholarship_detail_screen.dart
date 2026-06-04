@@ -31,46 +31,46 @@ class ScholarshipDetailScreen extends ConsumerWidget {
                     scholarship.isActive == true ? 'Aktif' : 'Pasif'),
                 _infoRow('Kota', scholarship.quota?.toString() ?? '-'),
                 _infoRow('Min GPA',
-                    scholarship.minGpa?.toStringAsFixed(2) ?? '-'),
-                if (scholarship.targetCities != null &&
-                    scholarship.targetCities!.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  const Text('Hedef Şehirler:'),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: scholarship.targetCities!
-                        .map((c) => Chip(label: Text(c)))
-                        .toList(),
-                  ),
-                ],
-                if (scholarship.targetDepartments != null &&
-                    scholarship.targetDepartments!.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  const Text('Hedef Bölümler:'),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: scholarship.targetDepartments!
-                        .map((d) => Chip(label: Text(d)))
-                        .toList(),
-                  ),
-                ],
-                if (scholarship.targetIncomeLevels != null &&
-                    scholarship.targetIncomeLevels!.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  const Text('Hedef Gelir Düzeyleri:'),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: scholarship.targetIncomeLevels!
-                        .map((l) => Chip(label: Text(l.name)))
-                        .toList(),
-                  ),
-                ],
+                    scholarship.minGpa?.toStringAsFixed(2) ?? 'Yok'),
+                const SizedBox(height: 16),
+                const Text('Hedef Şehirler:'),
+                const SizedBox(height: 4),
+                scholarship.targetCities != null &&
+                        scholarship.targetCities!.isNotEmpty
+                    ? Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: scholarship.targetCities!
+                            .map((c) => Chip(label: Text(c)))
+                            .toList(),
+                      )
+                    : const Text('Yok'),
+                const SizedBox(height: 16),
+                const Text('Hedef Bölümler:'),
+                const SizedBox(height: 4),
+                scholarship.targetDepartments != null &&
+                        scholarship.targetDepartments!.isNotEmpty
+                    ? Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: scholarship.targetDepartments!
+                            .map((d) => Chip(label: Text(d)))
+                            .toList(),
+                      )
+                    : const Text('Yok'),
+                const SizedBox(height: 16),
+                const Text('Hedef Gelir Düzeyleri:'),
+                const SizedBox(height: 4),
+                scholarship.targetIncomeLevels != null &&
+                        scholarship.targetIncomeLevels!.isNotEmpty
+                    ? Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: scholarship.targetIncomeLevels!
+                            .map((l) => Chip(label: Text(l.name)))
+                            .toList(),
+                      )
+                    : const Text('Yok'),
               ],
             ),
           );
