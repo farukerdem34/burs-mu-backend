@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'academic_standing.dart';
 import 'income_level.dart';
 import 'user_role.dart';
 
@@ -28,7 +29,7 @@ class RegisterRequest {
   @JsonKey(name: 'is_refugee')
   final bool? isRefugee;
   @JsonKey(name: 'academic_standing')
-  final String? academicStanding;
+  final AcademicStanding? academicStanding;
   @JsonKey(name: 'extracurricular_score')
   final int? extracurricularScore;
 

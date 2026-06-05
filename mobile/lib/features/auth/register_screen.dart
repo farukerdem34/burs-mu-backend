@@ -8,6 +8,7 @@ import '../../services/reference_service.dart';
 import '../../models/register_request.dart';
 import '../../models/user_role.dart';
 import '../../models/income_level.dart';
+import '../../models/academic_standing.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -22,11 +23,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _gpaController = TextEditingController();
-  TextEditingController? _deptController;
+  final _familyIncomeController = TextEditingController();
+  final _householdSizeController = TextEditingController();
+  final _numSiblingsController = TextEditingController();
 
   UserRole _role = UserRole.student;
   String? _selectedCity;
+  String? _selectedDepartment;
   IncomeLevel? _incomeStatus;
+  AcademicStanding? _academicStanding;
+  int? _semester;
+  int? _extracurricularScore;
+  bool _hasDisability = false;
+  bool _isOrphan = false;
+  bool _isRefugee = false;
+
   List<String> _cities = [];
   List<String> _departments = [];
   bool _isLoadingRefs = true;
@@ -35,6 +46,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
+
+  List<String> get _stepLabels {
+    if (_role == UserRole.student) {
+      return ['Hesap', 'Profil', 'Akademik', 'Aile', 'Tamamla'];
+    }
+    return ['Hesap', 'Tamamla'];
+  }
 
   @override
   void initState() {
@@ -95,6 +113,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _gpaController.dispose();
+    _familyIncomeController.dispose();
+    _householdSizeController.dispose();
+    _numSiblingsController.dispose();
     _slideController.dispose();
     super.dispose();
   }
@@ -110,14 +131,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Şifre girin';
-
     int score = 0;
     if (value.length >= 8) score++;
     if (RegExp(r'[a-z]').hasMatch(value)) score++;
     if (RegExp(r'[A-Z]').hasMatch(value)) score++;
     if (RegExp(r'[0-9]').hasMatch(value)) score++;
     if (RegExp(r'[^a-zA-Z0-9]').hasMatch(value)) score++;
-
     if (score < 3) {
       return 'Şifre çok zayıf. En az 8 karakter, büyük/küçük harf, rakam ve özel karakter içermeli';
     }
@@ -128,17 +147,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   }
 
   void _nextStep() {
-    setState(() {
-      _currentStep++;
-    });
+    setState(() => _currentStep++);
     _slideController.reset();
     _slideController.forward();
   }
 
   void _prevStep() {
-    setState(() {
-      _currentStep--;
-    });
+    setState(() => _currentStep--);
     _slideController.reset();
     _slideController.forward();
   }
@@ -151,11 +166,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       password: _passwordController.text,
       role: _role,
       city: _role == UserRole.student ? _selectedCity : null,
-      department: _role == UserRole.student ? _deptController?.text.trim() : null,
+      department: _role == UserRole.student ? _selectedDepartment : null,
       incomeStatus: _role == UserRole.student ? _incomeStatus : null,
       gpa: _role == UserRole.student && _gpaController.text.isNotEmpty
           ? double.tryParse(_gpaController.text)
           : null,
+      semester: _role == UserRole.student ? _semester : null,
+      familyIncome:
+          _role == UserRole.student && _familyIncomeController.text.isNotEmpty
+              ? double.tryParse(_familyIncomeController.text)
+              : null,
+      householdSize:
+          _role == UserRole.student && _householdSizeController.text.isNotEmpty
+              ? int.tryParse(_householdSizeController.text)
+              : null,
+      numSiblingsInEducation:
+          _role == UserRole.student && _numSiblingsController.text.isNotEmpty
+              ? int.tryParse(_numSiblingsController.text)
+              : null,
+      hasDisability: _role == UserRole.student ? _hasDisability : null,
+      isOrphan: _role == UserRole.student ? _isOrphan : null,
+      isRefugee: _role == UserRole.student ? _isRefugee : null,
+      academicStanding: _role == UserRole.student ? _academicStanding : null,
+      extracurricularScore:
+          _role == UserRole.student ? _extracurricularScore : null,
     );
 
     await ref.read(authProvider.notifier).register(request);
@@ -189,130 +223,139 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              cs.surface,
-              cs.surfaceContainerLow,
-            ],
+            colors: [cs.surface, cs.surfaceContainerLow],
           ),
         ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildStepIndicator(cs),
-                const SizedBox(height: 24),
-                SlideTransition(
-                  position: _slideAnimation,
-                  child: _buildCurrentStep(cs),
+        child: Column(
+          children: [
+            _buildStepIndicator(cs),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SlideTransition(
+                        position: _slideAnimation,
+                        child: _buildCurrentStep(cs),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildStepIndicator(ColorScheme cs) {
-    final steps = _role == UserRole.student
-        ? ['Hesap', 'Profil', 'Tamamla']
-        : ['Hesap', 'Tamamla'];
+    final steps = _stepLabels;
 
-    return Column(
-      children: [
-        Row(
-          children: List.generate(steps.length * 2 - 1, (i) {
-            if (i.isOdd) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Column(
+        children: [
+          Row(
+            children: List.generate(steps.length * 2 - 1, (i) {
+              if (i.isOdd) {
+                final stepIdx = i ~/ 2;
+                final isActive = stepIdx == _currentStep;
+                final isPast = stepIdx < _currentStep;
+                return Expanded(
+                  child: Container(
+                    height: 2,
+                    color: isPast || isActive
+                        ? cs.primary
+                        : cs.outlineVariant.withAlpha(80),
+                  ),
+                );
+              }
               final stepIdx = i ~/ 2;
               final isActive = stepIdx == _currentStep;
               final isPast = stepIdx < _currentStep;
-              return Expanded(
-                child: Container(
-                  height: 2,
-                  color: isPast || isActive
-                      ? cs.primary
-                      : cs.outlineVariant.withAlpha(80),
+              return Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isPast || isActive ? cs.primary : Colors.transparent,
+                  border: Border.all(
+                    color: isPast || isActive ? cs.primary : cs.outlineVariant,
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: isPast
+                      ? Icon(Icons.check, size: 16, color: cs.onPrimary)
+                      : Text(
+                          '${stepIdx + 1}',
+                          style: GoogleFonts.publicSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isActive
+                                ? cs.onPrimary
+                                : cs.onSurfaceVariant,
+                          ),
+                        ),
                 ),
               );
-            }
-            final stepIdx = i ~/ 2;
-            final isActive = stepIdx == _currentStep;
-            final isPast = stepIdx < _currentStep;
-            return Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isPast || isActive
-                    ? cs.primary
-                    : Colors.transparent,
-                border: Border.all(
-                  color: isPast || isActive
-                      ? cs.primary
-                      : cs.outlineVariant,
-                  width: 2,
+            }),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: List.generate(steps.length * 2 - 1, (i) {
+              if (i.isOdd) return const Expanded(child: SizedBox());
+              final stepIdx = i ~/ 2;
+              return Expanded(
+                child: Text(
+                  steps[stepIdx],
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.publicSans(
+                    fontSize: 11,
+                    fontWeight: stepIdx == _currentStep
+                        ? FontWeight.w600
+                        : FontWeight.w500,
+                    color: stepIdx == _currentStep
+                        ? cs.primary
+                        : cs.onSurfaceVariant,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
-              child: Center(
-                child: isPast
-                    ? Icon(Icons.check, size: 16, color: cs.onPrimary)
-                    : Text(
-                        '${stepIdx + 1}',
-                        style: GoogleFonts.publicSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isActive
-                              ? cs.onPrimary
-                              : cs.onSurfaceVariant,
-                        ),
-                      ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: List.generate(steps.length * 2 - 1, (i) {
-            if (i.isOdd) {
-              return const Expanded(child: SizedBox());
-            }
-            final stepIdx = i ~/ 2;
-            return Expanded(
-              child: Text(
-                steps[stepIdx],
-                textAlign: TextAlign.center,
-                style: GoogleFonts.publicSans(
-                  fontSize: 11,
-                  fontWeight:
-                      stepIdx == _currentStep ? FontWeight.w600 : FontWeight.w500,
-                  color: stepIdx == _currentStep
-                      ? cs.primary
-                      : cs.onSurfaceVariant,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            );
-          }),
-        ),
-      ],
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildCurrentStep(ColorScheme cs) {
-    switch (_currentStep) {
-      case 0:
-        return _buildAccountStep(cs);
-      case 1:
-        if (_role == UserRole.student) return _buildProfileStep(cs);
-        return _buildReviewStep(cs);
-      case 2:
-        return _buildReviewStep(cs);
-      default:
-        return _buildAccountStep(cs);
+    if (_role == UserRole.student) {
+      switch (_currentStep) {
+        case 0:
+          return _buildAccountStep(cs);
+        case 1:
+          return _buildStudentProfileStep(cs);
+        case 2:
+          return _buildAcademicStep(cs);
+        case 3:
+          return _buildFamilyStep(cs);
+        case 4:
+          return _buildReviewStep(cs);
+      }
+    } else {
+      switch (_currentStep) {
+        case 0:
+          return _buildAccountStep(cs);
+        case 1:
+          return _buildReviewStep(cs);
+      }
     }
+    return _buildAccountStep(cs);
   }
 
   Widget _buildSectionTitle(String title, ColorScheme cs) {
@@ -330,18 +373,87 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     );
   }
 
+  Widget _sectionCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(230),
+        borderRadius: BorderRadius.circular(AppTheme.lgRadius),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withAlpha(25)),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _navButtons({
+    required bool showPrev,
+    required VoidCallback? onNext,
+    String nextLabel = 'Devam Et',
+    IconData nextIcon = Icons.arrow_forward,
+  }) {
+    return Row(
+      children: [
+        if (showPrev)
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _prevStep,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.smRadius),
+                ),
+              ),
+              child: const Text('Geri'),
+            ),
+          ),
+        if (showPrev) const SizedBox(width: 12),
+        Expanded(
+          flex: showPrev ? 2 : 1,
+          child: SizedBox(
+            height: 52,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppTheme.smRadius),
+                gradient: AppTheme.primaryGradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryBlue.withAlpha(60),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: onNext,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.transparent,
+                  disabledForegroundColor: Colors.white38,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(nextLabel),
+                    const SizedBox(width: 8),
+                    Icon(nextIcon, size: 18),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildAccountStep(ColorScheme cs) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildSectionTitle('Hesap Bilgileri', cs),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(230),
-            borderRadius: BorderRadius.circular(AppTheme.lgRadius),
-            border: Border.all(color: cs.outlineVariant.withAlpha(25)),
-          ),
+        _sectionCard(
           child: Column(
             children: [
               TextFormField(
@@ -377,60 +489,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     .map((r) => DropdownMenuItem(
                         value: r, child: Text(r.displayName)))
                     .toList(),
-                onChanged: (v) => setState(() => _role = v!),
+                onChanged: (v) {
+                  setState(() {
+                    _role = v!;
+                    _currentStep = 0;
+                  });
+                  _slideController.reset();
+                  _slideController.forward();
+                },
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
-        SizedBox(
-          height: 52,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppTheme.smRadius),
-              gradient: AppTheme.primaryGradient,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryBlue.withAlpha(60),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ElevatedButton(
-              onPressed: _nextStep,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                foregroundColor: Colors.white,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Devam Et'),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward, size: 18),
-                ],
-              ),
-            ),
-          ),
-        ),
+        _navButtons(showPrev: false, onNext: _nextStep),
       ],
     );
   }
 
-  Widget _buildProfileStep(ColorScheme cs) {
+  Widget _buildStudentProfileStep(ColorScheme cs) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildSectionTitle('Öğrenci Profili', cs),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(230),
-            borderRadius: BorderRadius.circular(AppTheme.lgRadius),
-            border: Border.all(color: cs.outlineVariant.withAlpha(25)),
-          ),
+        _sectionCard(
           child: _isLoadingRefs
               ? const Padding(
                   padding: EdgeInsets.symmetric(vertical: 32),
@@ -441,11 +523,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                       children: [
                         Icon(Icons.cloud_off, size: 40, color: cs.error),
                         const SizedBox(height: 12),
-                        Text(
-                          _refsError!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: cs.error, fontSize: 13),
-                        ),
+                        Text(_refsError!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: cs.error, fontSize: 13)),
                         const SizedBox(height: 12),
                         TextButton.icon(
                           onPressed: _loadReferences,
@@ -464,52 +544,35 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                           ),
                           items: _cities
                               .map((c) => DropdownMenuItem(
-                                  value: c,
-                                  child: Text(c)))
+                                  value: c, child: Text(c)))
                               .toList(),
-                          onChanged: (v) =>
-                              setState(() => _selectedCity = v),
-                          validator: (v) =>
-                              v == null ? 'Şehir seçin' : null,
+                          onChanged: (v) => setState(() => _selectedCity = v),
+                          validator: (v) => v == null ? 'Şehir seçin' : null,
                         ),
                         const SizedBox(height: 20),
-                        Autocomplete<String>(
-                          optionsBuilder: (textEditingValue) {
-                            if (textEditingValue.text.isEmpty) {
-                              return _departments;
-                            }
-                            return _departments.where((d) => d
-                                .toLowerCase()
-                                .contains(
-                                    textEditingValue.text.toLowerCase()));
-                          },
-                          onSelected: (v) => _deptController?.text = v,
-                          fieldViewBuilder: (context, controller,
-                              focusNode, onSubmitted) {
-                            _deptController = controller;
-                            return TextFormField(
-                              controller: controller,
-                              focusNode: focusNode,
-                              decoration: const InputDecoration(
-                                labelText: 'Bölüm',
-                                hintText: 'Ara veya yazın',
-                                prefixIcon:
-                                    Icon(Icons.school_outlined, size: 20),
-                              ),
-                              validator: (v) => v != null &&
-                                      v.trim().isNotEmpty
-                                  ? null
-                                  : 'Bölüm girin',
-                            );
-                          },
+                        DropdownButtonFormField<String>(
+                          initialValue: _selectedDepartment,
+                          decoration: const InputDecoration(
+                            labelText: 'Bölüm',
+                            prefixIcon:
+                                Icon(Icons.school_outlined, size: 20),
+                          ),
+                          items: _departments
+                              .map((d) => DropdownMenuItem(
+                                  value: d, child: Text(d)))
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _selectedDepartment = v),
+                          validator: (v) =>
+                              v == null ? 'Bölüm seçin' : null,
                         ),
                         const SizedBox(height: 20),
                         DropdownButtonFormField<IncomeLevel>(
                           initialValue: _incomeStatus,
                           decoration: const InputDecoration(
                             labelText: 'Gelir Düzeyi',
-                            prefixIcon: Icon(Icons.monetization_on_outlined,
-                                size: 20),
+                            prefixIcon: Icon(
+                                Icons.monetization_on_outlined, size: 20),
                           ),
                           items: IncomeLevel.values
                               .map((l) => DropdownMenuItem(
@@ -518,74 +581,155 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                               .toList(),
                           onChanged: (v) =>
                               setState(() => _incomeStatus = v),
-                        ),
-                        const SizedBox(height: 20),
-                        TextFormField(
-                          controller: _gpaController,
-                          decoration: const InputDecoration(
-                            labelText: 'GPA (opsiyonel)',
-                            prefixIcon:
-                                Icon(Icons.stars_outlined, size: 20),
-                          ),
-                          keyboardType: TextInputType.number,
+                          validator: (v) =>
+                              v == null ? 'Gelir düzeyi seçin' : null,
                         ),
                       ],
                     ),
         ),
         const SizedBox(height: 24),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _prevStep,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.smRadius),
-                  ),
+        _navButtons(showPrev: true, onNext: _nextStep),
+      ],
+    );
+  }
+
+  Widget _buildAcademicStep(ColorScheme cs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSectionTitle('Akademik Bilgiler', cs),
+        _sectionCard(
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _gpaController,
+                decoration: const InputDecoration(
+                  labelText: 'GPA',
+                  hintText: '0.00 - 4.00',
+                  prefixIcon: Icon(Icons.stars_outlined, size: 20),
                 ),
-                child: const Text('Geri'),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.next,
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: SizedBox(
-                height: 52,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius:
-                        BorderRadius.circular(AppTheme.smRadius),
-                    gradient: AppTheme.primaryGradient,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryBlue.withAlpha(60),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton(
-                    onPressed: _nextStep,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Devam Et'),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward, size: 18),
-                      ],
-                    ),
-                  ),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<int>(
+                initialValue: _semester,
+                decoration: const InputDecoration(
+                  labelText: 'Dönem',
+                  prefixIcon: Icon(Icons.numbers, size: 20),
                 ),
+                items: List.generate(8, (i) => i + 1).map((s) {
+                  final label = switch (s) {
+                    1 => '1. Dönem',
+                    2 => '2. Dönem',
+                    3 => '3. Dönem',
+                    4 => '4. Dönem',
+                    5 => '5. Dönem',
+                    6 => '6. Dönem',
+                    7 => '7. Dönem',
+                    _ => '8. Dönem',
+                  };
+                  return DropdownMenuItem(value: s, child: Text(label));
+                }).toList(),
+                onChanged: (v) => setState(() => _semester = v),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              DropdownButtonFormField<AcademicStanding>(
+                initialValue: _academicStanding,
+                decoration: const InputDecoration(
+                  labelText: 'Akademik Durum',
+                  prefixIcon: Icon(Icons.assessment, size: 20),
+                ),
+                items: AcademicStanding.values
+                    .map((a) => DropdownMenuItem(
+                        value: a, child: Text(a.displayName)))
+                    .toList(),
+                onChanged: (v) => setState(() => _academicStanding = v),
+              ),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<int>(
+                initialValue: _extracurricularScore,
+                decoration: const InputDecoration(
+                  labelText: 'Ekstraküler Puan',
+                  prefixIcon: Icon(Icons.emoji_events_outlined, size: 20),
+                ),
+                items: List.generate(11, (i) => i).map((s) {
+                  return DropdownMenuItem(value: s, child: Text('$s'));
+                }).toList(),
+                onChanged: (v) => setState(() => _extracurricularScore = v),
+              ),
+            ],
+          ),
         ),
+        const SizedBox(height: 24),
+        _navButtons(showPrev: true, onNext: _nextStep),
+      ],
+    );
+  }
+
+  Widget _buildFamilyStep(ColorScheme cs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSectionTitle('Aile ve Kişisel Bilgiler', cs),
+        _sectionCard(
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _familyIncomeController,
+                decoration: const InputDecoration(
+                  labelText: 'Aylık Aile Geliri (TL)',
+                  prefixIcon: Icon(Icons.account_balance_wallet, size: 20),
+                ),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _householdSizeController,
+                decoration: const InputDecoration(
+                  labelText: 'Hane Halkı Sayısı',
+                  prefixIcon: Icon(Icons.people, size: 20),
+                ),
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _numSiblingsController,
+                decoration: const InputDecoration(
+                  labelText: 'Eğitimdeki Kardeş Sayısı',
+                  prefixIcon: Icon(Icons.school, size: 20),
+                ),
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+              ),
+              const SizedBox(height: 20),
+              SwitchListTile(
+                title: const Text('Engel Durumu'),
+                subtitle: const Text('Bir engeliniz var mı?'),
+                value: _hasDisability,
+                onChanged: (v) => setState(() => _hasDisability = v),
+              ),
+              SwitchListTile(
+                title: const Text('Yetim'),
+                subtitle: const Text('Anneniz veya babanız vefat etmiş mi?'),
+                value: _isOrphan,
+                onChanged: (v) => setState(() => _isOrphan = v),
+              ),
+              SwitchListTile(
+                title: const Text('Mülteci'),
+                subtitle: const Text('Mülteci statüsünde misiniz?'),
+                value: _isRefugee,
+                onChanged: (v) => setState(() => _isRefugee = v),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        _navButtons(showPrev: true, onNext: _nextStep),
       ],
     );
   }
@@ -593,17 +737,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   Widget _buildReviewStep(ColorScheme cs) {
     final authState = ref.watch(authProvider);
 
+    String displayValue(String? val) => (val != null && val.isNotEmpty) ? val : '-';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildSectionTitle('Bilgilerinizi Onaylayın', cs),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(230),
-            borderRadius: BorderRadius.circular(AppTheme.lgRadius),
-            border: Border.all(color: cs.outlineVariant.withAlpha(25)),
-          ),
+        _sectionCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -611,23 +751,51 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               const SizedBox(height: 16),
               _buildInfoRow('Rol', _role.displayName, cs),
               if (_role == UserRole.student) ...[
+                const Divider(height: 24),
+                _buildInfoRow('Şehir', displayValue(_selectedCity), cs),
                 const SizedBox(height: 16),
-                _buildInfoRow('Şehir', _selectedCity ?? '-', cs),
+                _buildInfoRow('Bölüm', displayValue(_selectedDepartment), cs),
                 const SizedBox(height: 16),
-                _buildInfoRow(
-                    'Bölüm', _deptController?.text ?? '-', cs),
-                const SizedBox(height: 16),
-                _buildInfoRow(
-                    'Gelir Düzeyi',
-                    _incomeStatus?.displayName ?? '-',
+                _buildInfoRow('Gelir Düzeyi',
+                    _incomeStatus?.displayName ?? '-', cs),
+                const Divider(height: 24),
+                _buildInfoRow('GPA',
+                    _gpaController.text.isNotEmpty ? _gpaController.text : '-',
                     cs),
                 const SizedBox(height: 16),
+                _buildInfoRow('Dönem', _semester?.toString() ?? '-', cs),
+                const SizedBox(height: 16),
+                _buildInfoRow('Akademik Durum',
+                    _academicStanding?.displayName ?? '-', cs),
+                const SizedBox(height: 16),
                 _buildInfoRow(
-                    'GPA',
-                    _gpaController.text.isNotEmpty
-                        ? _gpaController.text
+                    'Ekstraküler Puan',
+                    _extracurricularScore?.toString() ?? '-',
+                    cs),
+                const Divider(height: 24),
+                _buildInfoRow('Aile Geliri',
+                    _familyIncomeController.text.isNotEmpty
+                        ? '${_familyIncomeController.text} TL'
                         : '-',
                     cs),
+                const SizedBox(height: 16),
+                _buildInfoRow('Hane Halkı',
+                    _householdSizeController.text.isNotEmpty
+                        ? _householdSizeController.text
+                        : '-',
+                    cs),
+                const SizedBox(height: 16),
+                _buildInfoRow('Eğitimdeki Kardeş',
+                    _numSiblingsController.text.isNotEmpty
+                        ? _numSiblingsController.text
+                        : '-',
+                    cs),
+                const SizedBox(height: 16),
+                _buildInfoRow('Engel Durumu', _hasDisability ? 'Var' : 'Yok', cs),
+                const SizedBox(height: 16),
+                _buildInfoRow('Yetim', _isOrphan ? 'Evet' : 'Hayır', cs),
+                const SizedBox(height: 16),
+                _buildInfoRow('Mülteci', _isRefugee ? 'Evet' : 'Hayır', cs),
               ],
             ],
           ),
@@ -656,71 +824,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               ),
             ),
           ),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _prevStep,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.smRadius),
-                  ),
-                ),
-                child: const Text('Geri'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: SizedBox(
-                height: 52,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius:
-                        BorderRadius.circular(AppTheme.smRadius),
-                    gradient: AppTheme.primaryGradient,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryBlue.withAlpha(60),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton(
-                    onPressed: authState.status == AuthStatus.loading
-                        ? null
-                        : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.transparent,
-                      disabledForegroundColor: Colors.white38,
-                    ),
-                    child: authState.status == AuthStatus.loading
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('Kayıt Ol'),
-                              SizedBox(width: 8),
-                              Icon(Icons.check_circle_outline, size: 20),
-                            ],
-                          ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+        _navButtons(
+          showPrev: true,
+          onNext: authState.status == AuthStatus.loading ? null : _submit,
+          nextLabel: 'Kayıt Ol',
+          nextIcon: Icons.check_circle_outline,
         ),
         const SizedBox(height: 16),
         Row(
@@ -755,7 +863,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 100,
+          width: 130,
           child: Text(
             label,
             style: GoogleFonts.publicSans(

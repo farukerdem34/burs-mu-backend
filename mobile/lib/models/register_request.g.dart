@@ -26,7 +26,10 @@ RegisterRequest _$RegisterRequestFromJson(Map<String, dynamic> json) =>
       hasDisability: json['has_disability'] as bool?,
       isOrphan: json['is_orphan'] as bool?,
       isRefugee: json['is_refugee'] as bool?,
-      academicStanding: json['academic_standing'] as String?,
+      academicStanding: $enumDecodeNullable(
+        _$AcademicStandingEnumMap,
+        json['academic_standing'],
+      ),
       extracurricularScore: (json['extracurricular_score'] as num?)?.toInt(),
     );
 
@@ -46,7 +49,7 @@ Map<String, dynamic> _$RegisterRequestToJson(RegisterRequest instance) =>
       'has_disability': instance.hasDisability,
       'is_orphan': instance.isOrphan,
       'is_refugee': instance.isRefugee,
-      'academic_standing': instance.academicStanding,
+      'academic_standing': _$AcademicStandingEnumMap[instance.academicStanding],
       'extracurricular_score': instance.extracurricularScore,
     };
 
@@ -60,4 +63,11 @@ const _$IncomeLevelEnumMap = {
   IncomeLevel.low: 0,
   IncomeLevel.medium: 1,
   IncomeLevel.high: 2,
+};
+
+const _$AcademicStandingEnumMap = {
+  AcademicStanding.probation: 'probation',
+  AcademicStanding.good: 'good',
+  AcademicStanding.honor: 'honor',
+  AcademicStanding.highHonor: 'high_honor',
 };
