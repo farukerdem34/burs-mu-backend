@@ -1,8 +1,13 @@
 import 'package:dio/dio.dart';
 import '../core/constants.dart';
-import '../core/secure_storage.dart';
 
 class ApiClient {
+  static String? _token;
+
+  static void setToken(String? token) {
+    _token = token;
+  }
+
   static Dio create() {
     final dio = Dio(BaseOptions(
       baseUrl: AppConfig.baseUrl,
@@ -12,22 +17,11 @@ class ApiClient {
     ));
 
     dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        if (!options.path.contains('/login') &&
-            !options.path.contains('/register')) {
-          try {
-            final token = await SecureStorage.getToken();
-            if (token != null) {
-              options.headers['Authorization'] = 'Bearer $token';
-            }
-          } catch (_) {
-            // SecureStorage not available (e.g. macOS without entitlements)
-          }
+      onRequest: (options, handler) {
+        if (_token != null) {
+          options.headers['Authorization'] = 'Bearer $_token';
         }
         handler.next(options);
-      },
-      onError: (error, handler) async {
-        handler.next(error);
       },
     ));
 

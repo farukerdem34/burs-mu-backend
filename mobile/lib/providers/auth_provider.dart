@@ -53,6 +53,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _checkSession() async {
     final token = await SecureStorage.getToken();
     if (token != null) {
+      ApiClient.setToken(token);
       final roleStr = await SecureStorage.getRole();
       state = AuthState(
         status: AuthStatus.authenticated,
@@ -99,6 +100,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    ApiClient.setToken(null);
     await SecureStorage.clear();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }

@@ -5,6 +5,7 @@ import '../models/login_request.dart';
 import '../models/login_response.dart';
 import '../models/register_request.dart';
 import '../models/register_response.dart';
+import 'api_client.dart';
 
 class AuthService {
   final Dio _dio;
@@ -21,6 +22,7 @@ class AuthService {
       if (loginResponse.id != null) {
         await SecureStorage.saveToken(loginResponse.id!);
         await SecureStorage.saveRole(loginResponse.role!.name);
+        ApiClient.setToken(loginResponse.id);
       }
       return loginResponse;
     } on DioException catch (e) {
@@ -38,6 +40,7 @@ class AuthService {
       if (registerResponse.id != null) {
         await SecureStorage.saveToken(registerResponse.id!);
         await SecureStorage.saveRole(registerResponse.role!.name);
+        ApiClient.setToken(registerResponse.id);
       }
       return registerResponse;
     } on DioException catch (e) {
