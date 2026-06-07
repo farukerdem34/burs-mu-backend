@@ -5,6 +5,7 @@ import '../../core/api_config.dart';
 import '../../core/secure_storage.dart';
 import '../../core/theme.dart';
 import '../../core/screen_utils.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_client.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -59,6 +60,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final config = _buildConfig();
       await SecureStorage.saveApiConfig(config);
       ApiClient.setBaseUrl(config);
+      final dio = ref.read(dioProvider);
+      ApiClient.updateDioBaseUrl(dio, config);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ayarlar kaydedildi')),
