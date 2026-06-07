@@ -33,7 +33,7 @@ class HomeScreen extends ConsumerWidget {
                 _buildGreeting(context, authState),
                 const SizedBox(height: 24),
                 if (role == UserRole.student) ..._studentContent(context, authState.token),
-                if (role == UserRole.donor) ..._donorContent(context),
+                if (role == UserRole.donor) ..._donorContent(context, authState.token),
                 if (role == UserRole.admin) ..._adminContent(context, ref),
               ]),
             ),
@@ -214,7 +214,7 @@ class HomeScreen extends ConsumerWidget {
     ];
   }
 
-  List<Widget> _donorContent(BuildContext context) {
+  List<Widget> _donorContent(BuildContext context, String? profileId) {
     final cs = Theme.of(context).colorScheme;
 
     return [
@@ -228,7 +228,9 @@ class HomeScreen extends ConsumerWidget {
         iconBgColor: cs.primary,
         title: 'Burslarım',
         subtitle: 'Oluşturduğunuz bursları yönetin',
-        onTap: () => context.push('/scholarships'),
+        onTap: () => profileId != null
+            ? context.push('/donors/$profileId/scholarships')
+            : context.push('/scholarships'),
       ),
       const SizedBox(height: 12),
       _buildActionCard(

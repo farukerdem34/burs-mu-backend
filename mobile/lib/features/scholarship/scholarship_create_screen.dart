@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/create_scholarship_request.dart';
 import '../../models/income_level.dart';
+import '../../models/user_role.dart';
 import '../../providers/scholarship_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/reference_service.dart';
@@ -21,15 +22,36 @@ class _ScholarshipCreateScreenState
   final _titleController = TextEditingController();
   final _quotaController = TextEditingController();
   final _minGpaController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _durationController = TextEditingController();
+  final _maxSemesterController = TextEditingController();
+  final _minExtracurricularController = TextEditingController();
+  final _maxHouseholdIncomeController = TextEditingController();
 
   bool _isActive = true;
-  List<String> _selectedCities = [];
-  List<String> _selectedDepartments = [];
-  List<IncomeLevel> _selectedIncomeLevels = [];
+  String? _scholarshipType;
+  String? _preferredGender;
+  bool _requiresEssay = false;
+  bool _requiresInterview = false;
+  bool _acceptsDisability = false;
+  bool _acceptsOrphan = false;
+  bool _acceptsRefugee = false;
+  final List<String> _selectedCities = [];
+  final List<String> _selectedDepartments = [];
+  final List<IncomeLevel> _selectedIncomeLevels = [];
   List<String> _cities = [];
   List<String> _departments = [];
 
   bool _isLoading = true;
+
+  static const _scholarshipTypes = [
+    'full_tuition',
+    'partial_tuition',
+    'living_stipend',
+    'one_time',
+  ];
+
+  static const _genders = ['male', 'female'];
 
   @override
   void initState() {
@@ -62,14 +84,23 @@ class _ScholarshipCreateScreenState
     _titleController.dispose();
     _quotaController.dispose();
     _minGpaController.dispose();
+    _amountController.dispose();
+    _durationController.dispose();
+    _maxSemesterController.dispose();
+    _minExtracurricularController.dispose();
+    _maxHouseholdIncomeController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final authState = ref.read(authProvider);
+    final donorId = authState.role == UserRole.donor ? authState.token : null;
+
     try {
       final request = CreateScholarshipRequest(
+        donorId: donorId,
         title: _titleController.text.trim(),
         quota: int.tryParse(_quotaController.text),
         isActive: _isActive,
@@ -80,6 +111,18 @@ class _ScholarshipCreateScreenState
             _selectedDepartments.isEmpty ? null : _selectedDepartments,
         targetIncomeLevels:
             _selectedIncomeLevels.isEmpty ? null : _selectedIncomeLevels,
+        amountPerYear: double.tryParse(_amountController.text),
+        durationMonths: int.tryParse(_durationController.text),
+        scholarshipType: _scholarshipType,
+        preferredGender: _preferredGender,
+        requiresEssay: _requiresEssay ? true : null,
+        requiresInterview: _requiresInterview ? true : null,
+        acceptsDisability: _acceptsDisability ? true : null,
+        acceptsOrphan: _acceptsOrphan ? true : null,
+        acceptsRefugee: _acceptsRefugee ? true : null,
+        maxSemester: int.tryParse(_maxSemesterController.text),
+        minExtracurricularScore: int.tryParse(_minExtracurricularController.text),
+        maxHouseholdIncome: double.tryParse(_maxHouseholdIncomeController.text),
       );
 
       await ref.read(scholarshipServiceProvider).create(request);
@@ -115,9 +158,24 @@ class _ScholarshipCreateScreenState
             children: [
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Burs Adı'),
+                decoration: const InputDecoration(labelText: 'Burs Adı *'),
                 validator: (v) =>
                     v != null && v.isNotEmpty ? null : 'Burs adı gerekli',
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _amountController,
+                decoration: const InputDecoration(
+                  labelText: 'Yıllık Burs Miktarı (TL)',
+                  prefixText: '₺ ',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _durationController,
+                decoration: const InputDecoration(labelText: 'Süre (ay)'),
+                keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -132,10 +190,84 @@ class _ScholarshipCreateScreenState
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _scholarshipType,
+                decoration: const InputDecoration(labelText: 'Burs Türü'),
+                items: _scholarshipTypes
+                    .map((t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(_scholarshipTypeLabel(t)),
+                        ))
+                    .toList(),
+                onChanged: (v) => setState(() => _scholarshipType = v),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _preferredGender,
+                decoration: const InputDecoration(labelText: 'Cinsiyet Tercihi'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('Farketmez')),
+                  ..._genders
+                      .map((g) => DropdownMenuItem(
+                            value: g,
+                            child: Text(_genderLabel(g)),
+                          )),
+                ],
+                onChanged: (v) => setState(() => _preferredGender = v),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _maxHouseholdIncomeController,
+                decoration: const InputDecoration(
+                  labelText: 'Maksimum Aile Geliri (TL)',
+                  prefixText: '₺ ',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _maxSemesterController,
+                decoration: const InputDecoration(labelText: 'Maksimum Dönem'),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _minExtracurricularController,
+                decoration: const InputDecoration(
+                  labelText: 'Min. Sosyal Aktivite Puanı',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
               SwitchListTile(
                 title: const Text('Aktif'),
                 value: _isActive,
                 onChanged: (v) => setState(() => _isActive = v),
+              ),
+              SwitchListTile(
+                title: const Text('Kompozisyon Gerekli'),
+                value: _requiresEssay,
+                onChanged: (v) => setState(() => _requiresEssay = v),
+              ),
+              SwitchListTile(
+                title: const Text('Mülakat Gerekli'),
+                value: _requiresInterview,
+                onChanged: (v) => setState(() => _requiresInterview = v),
+              ),
+              SwitchListTile(
+                title: const Text('Engelli Adaylara Açık'),
+                value: _acceptsDisability,
+                onChanged: (v) => setState(() => _acceptsDisability = v),
+              ),
+              SwitchListTile(
+                title: const Text('Yetim Adaylara Açık'),
+                value: _acceptsOrphan,
+                onChanged: (v) => setState(() => _acceptsOrphan = v),
+              ),
+              SwitchListTile(
+                title: const Text('Mülteci Adaylara Açık'),
+                value: _acceptsRefugee,
+                onChanged: (v) => setState(() => _acceptsRefugee = v),
               ),
               const SizedBox(height: 16),
               const Text('Hedef Şehirler (opsiyonel):'),
@@ -213,5 +345,31 @@ class _ScholarshipCreateScreenState
         ),
       ),
     );
+  }
+
+  String _scholarshipTypeLabel(String type) {
+    switch (type) {
+      case 'full_tuition':
+        return 'Tam Burs';
+      case 'partial_tuition':
+        return 'Kısmi Burs';
+      case 'living_stipend':
+        return 'Yaşam Desteği';
+      case 'one_time':
+        return 'Tek Seferlik';
+      default:
+        return type;
+    }
+  }
+
+  String _genderLabel(String gender) {
+    switch (gender) {
+      case 'male':
+        return 'Erkek';
+      case 'female':
+        return 'Kadın';
+      default:
+        return gender;
+    }
   }
 }

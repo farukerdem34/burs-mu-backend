@@ -30,4 +30,13 @@ class ScholarshipService {
     );
     return Scholarship.fromJson(response.data!);
   }
+
+  Future<List<Scholarship>> getByDonorId(String donorProfileId) async {
+    final response = await _dio.get<List<dynamic>>(
+      '${ApiConstants.donors}/$donorProfileId/scholarships',
+    );
+    return response.data!
+        .map((e) => Scholarship.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

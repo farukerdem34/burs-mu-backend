@@ -15,3 +15,8 @@ final scholarshipDetailProvider =
     FutureProvider.family<Scholarship, String>((ref, id) async {
   return ref.read(scholarshipServiceProvider).getById(id);
 });
+
+final donorScholarshipsProvider =
+    FutureProvider.family<List<Scholarship>, String>((ref, donorProfileId) async {
+  return ref.read(scholarshipServiceProvider).getByDonorId(donorProfileId);
+});

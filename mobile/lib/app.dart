@@ -10,6 +10,7 @@ import 'features/student/student_edit_screen.dart';
 import 'features/student/match_result_screen.dart';
 import 'features/donor/donor_list_screen.dart';
 import 'features/donor/donor_detail_screen.dart';
+import 'features/donor/donor_scholarships_screen.dart';
 import 'features/scholarship/scholarship_list_screen.dart';
 import 'features/scholarship/scholarship_detail_screen.dart';
 import 'features/scholarship/scholarship_create_screen.dart';
@@ -68,6 +69,14 @@ final _router = GoRouter(
           builder: (_, state) => DonorDetailScreen(
             profileId: state.pathParameters['profileId']!,
           ),
+          routes: [
+            GoRoute(
+              path: 'scholarships',
+              builder: (_, state) => DonorScholarshipsScreen(
+                donorProfileId: state.pathParameters['profileId']!,
+              ),
+            ),
+          ],
         ),
       ],
     ),
