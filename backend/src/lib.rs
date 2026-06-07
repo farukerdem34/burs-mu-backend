@@ -8,10 +8,10 @@ pub mod state;
 
 use axum::routing::{delete, get, post};
 use axum::Router;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer};
 
 pub fn build_router(state: state::AppState) -> Router {
-    let cors = CorsLayer::permissive();
+    let cors = build_cors(&state.config);
 
     Router::new()
         .route("/health", get(handlers::health))
@@ -52,4 +52,23 @@ pub fn build_router(state: state::AppState) -> Router {
         .route("/user-roles", get(handlers::get_user_roles))
         .layer(cors)
         .with_state(state)
+}
+
+fn build_cors(config: &config::AppConfig) -> CorsLayer {
+    if config.allowed_origins.len() == 1 && config.allowed_origins[0] == "*" {
+        return CorsLayer::permissive();
+    }
+    let origins: Vec<axum::http::HeaderValue> = config
+        .allowed_origins
+        .iter()
+        .filter_map(|o| {
+            o.parse()
+                .inspect_err(|e| tracing::warn!("Invalid CORS origin {o:?}: {e}"))
+                .ok()
+        })
+        .collect();
+    CorsLayer::new()
+        .allow_origin(AllowOrigin::list(origins))
+        .allow_methods(AllowMethods::any())
+        .allow_headers(AllowHeaders::any())
 }

@@ -97,7 +97,7 @@ impl sqlx::Encode<'_, sqlx::Postgres> for AcademicStanding {
         buf: &mut sqlx::postgres::PgArgumentBuffer,
     ) -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
         let s = serde_json::to_value(self)
-            .and_then(|v| Ok(serde_json::from_value::<String>(v)?))
+            .and_then(serde_json::from_value::<String>)
             .unwrap_or_else(|_| "good".to_string());
         <String as sqlx::Encode<sqlx::Postgres>>::encode(s, buf)
     }
@@ -139,7 +139,7 @@ impl sqlx::Encode<'_, sqlx::Postgres> for ScholarshipType {
         buf: &mut sqlx::postgres::PgArgumentBuffer,
     ) -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
         let s = serde_json::to_value(self)
-            .and_then(|v| Ok(serde_json::from_value::<String>(v)?))
+            .and_then(serde_json::from_value::<String>)
             .unwrap_or_else(|_| "partial_tuition".to_string());
         <String as sqlx::Encode<sqlx::Postgres>>::encode(s, buf)
     }

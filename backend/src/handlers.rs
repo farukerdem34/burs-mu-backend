@@ -317,7 +317,7 @@ pub async fn register(
         if let (Some(city), Some(department_input), Some(income_status)) =
             (&body.city, &body.department, &body.income_status)
         {
-            let department = find_or_create_department(&state, department_input).await;
+            let department = find_or_create_department(&state, department_input, state.config.department_similarity_threshold).await;
 
             if let Err(e) = sqlx::query(
                 "INSERT INTO students (profile_id, gpa, city, department, income_status, semester, family_income, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
@@ -438,7 +438,7 @@ async fn validate_cities(state: &AppState, cities: &[String]) -> Result<(), Stri
 }
 
 fn validate_gpa(gpa: f32, field: &str) -> Result<(), String> {
-    if gpa < 0.0 || gpa > 4.0 {
+    if !(0.0..=4.0).contains(&gpa) {
         Err(format!("{} 0.0 ile 4.0 arasında olmalıdır", field))
     } else {
         Ok(())
@@ -468,7 +468,7 @@ pub async fn create_student(
         }
     }
 
-    let department = find_or_create_department(&state, &body.department).await;
+    let department = find_or_create_department(&state, &body.department, state.config.department_similarity_threshold).await;
 
     match sqlx::query(
         "INSERT INTO students (profile_id, gpa, city, department, income_status, semester, family_income, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
@@ -477,7 +477,7 @@ pub async fn create_student(
     .bind(body.gpa)
     .bind(&body.city)
     .bind(&department)
-    .bind(&body.income_status)
+    .bind(body.income_status)
     .bind(body.semester)
     .bind(body.family_income)
     .bind(body.household_size)
@@ -518,6 +518,102 @@ pub async fn create_student(
             )
                 .into_response()
         }
+    }
+}
+
+pub async fn update_student(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(profile_id): Path<Uuid>,
+    Json(body): Json<UpdateStudentRequest>,
+) -> impl IntoResponse {
+    if auth.id != profile_id && auth.role != UserRole::Admin {
+        return (
+            StatusCode::FORBIDDEN,
+            Json("Kendi hesabınızı düzenleyebilirsiniz"),
+        )
+            .into_response();
+    }
+
+    if let Some(gpa) = body.gpa {
+        if let Err(msg) = validate_gpa(gpa, "GPA") {
+            return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
+        }
+    }
+
+    let department = if let Some(ref dept) = body.department {
+        Some(find_or_create_department(&state, dept, state.config.department_similarity_threshold).await)
+    } else {
+        None
+    };
+
+    let updated = sqlx::query(
+        "UPDATE students SET gpa = COALESCE($1, gpa), city = COALESCE($2, city), department = COALESCE($3, department), income_status = COALESCE($4, income_status), about = COALESCE($5, about), semester = COALESCE($6, semester), family_income = COALESCE($7, family_income), household_size = COALESCE($8, household_size), num_siblings_in_education = COALESCE($9, num_siblings_in_education), has_disability = COALESCE($10, has_disability), is_orphan = COALESCE($11, is_orphan), is_refugee = COALESCE($12, is_refugee), academic_standing = COALESCE($13, academic_standing), extracurricular_score = COALESCE($14, extracurricular_score) WHERE profile_id = $15",
+    )
+    .bind(body.gpa)
+    .bind(&body.city)
+    .bind(&department)
+    .bind(body.income_status)
+    .bind(&body.about)
+    .bind(body.semester)
+    .bind(body.family_income)
+    .bind(body.household_size)
+    .bind(body.num_siblings_in_education)
+    .bind(body.has_disability)
+    .bind(body.is_orphan)
+    .bind(body.is_refugee)
+    .bind(&body.academic_standing)
+    .bind(body.extracurricular_score)
+    .bind(profile_id)
+    .execute(&state.db_pool)
+    .await;
+
+    match updated {
+        Ok(res) if res.rows_affected() > 0 => {}
+        _ => {
+            if body.city.is_none() || body.department.is_none() || body.income_status.is_none() {
+                return (StatusCode::BAD_REQUEST, Json("İlk kayıtta şehir, departman ve gelir düzeyi zorunludur")).into_response();
+            }
+            if let Err(e) = sqlx::query(
+                "INSERT INTO students (profile_id, gpa, city, department, income_status, about, semester, family_income, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
+            )
+            .bind(profile_id)
+            .bind(body.gpa)
+            .bind(body.city.as_deref())
+            .bind(department.as_deref())
+            .bind(body.income_status)
+            .bind(&body.about)
+            .bind(body.semester)
+            .bind(body.family_income)
+            .bind(body.household_size)
+            .bind(body.num_siblings_in_education)
+            .bind(body.has_disability)
+            .bind(body.is_orphan)
+            .bind(body.is_refugee)
+            .bind(&body.academic_standing)
+            .bind(body.extracurricular_score)
+            .execute(&state.db_pool)
+            .await
+            {
+                tracing::error!("Failed to insert student: {}", e);
+                return (StatusCode::INTERNAL_SERVER_ERROR, Json(format!("Failed to create student: {}", e))).into_response();
+            }
+        }
+    };
+
+    let student = sqlx::query_as::<_, Student>(
+        "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
+           semester, family_income::float8, household_size, num_siblings_in_education,
+           has_disability, is_orphan, is_refugee, academic_standing::text, extracurricular_score
+           FROM students WHERE profile_id = $1",
+    )
+    .bind(profile_id)
+    .fetch_one(&state.db_pool)
+    .await;
+
+    match student {
+        Ok(s) => (StatusCode::OK, Json(s)).into_response(),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json("Student updated but failed to fetch")).into_response(),
     }
 }
 
@@ -634,105 +730,6 @@ pub async fn get_student_matches(
     });
 
     (StatusCode::OK, Json(results)).into_response()
-}
-
-pub async fn update_student(
-    State(state): State<AppState>,
-    auth: AuthUser,
-    Path(profile_id): Path<Uuid>,
-    Json(body): Json<UpdateStudentRequest>,
-) -> impl IntoResponse {
-    if auth.id != profile_id && auth.role != UserRole::Admin {
-        return (
-            StatusCode::FORBIDDEN,
-            Json("Kendi hesabınızı düzenleyebilirsiniz"),
-        )
-            .into_response();
-    }
-
-    if let Some(gpa) = body.gpa {
-        if let Err(msg) = validate_gpa(gpa, "GPA") {
-            return (StatusCode::BAD_REQUEST, Json(msg)).into_response();
-        }
-    }
-
-    let department = if let Some(ref dept) = body.department {
-        Some(find_or_create_department(&state, dept).await)
-    } else {
-        None
-    };
-
-    let updated = sqlx::query(
-        "UPDATE students SET gpa = COALESCE($1, gpa), city = COALESCE($2, city), department = COALESCE($3, department), income_status = COALESCE($4, income_status), about = COALESCE($5, about), semester = COALESCE($6, semester), family_income = COALESCE($7, family_income), household_size = COALESCE($8, household_size), num_siblings_in_education = COALESCE($9, num_siblings_in_education), has_disability = COALESCE($10, has_disability), is_orphan = COALESCE($11, is_orphan), is_refugee = COALESCE($12, is_refugee), academic_standing = COALESCE($13, academic_standing), extracurricular_score = COALESCE($14, extracurricular_score) WHERE profile_id = $15",
-    )
-    .bind(body.gpa)
-    .bind(&body.city)
-    .bind(&department)
-    .bind(&body.income_status)
-    .bind(&body.about)
-    .bind(body.semester)
-    .bind(body.family_income)
-    .bind(body.household_size)
-    .bind(body.num_siblings_in_education)
-    .bind(body.has_disability)
-    .bind(body.is_orphan)
-    .bind(body.is_refugee)
-    .bind(&body.academic_standing)
-    .bind(body.extracurricular_score)
-    .bind(profile_id)
-    .execute(&state.db_pool)
-    .await;
-
-    match updated {
-        Ok(res) if res.rows_affected() > 0 => {
-            // updated existing row
-        }
-        _ => {
-            // no row to update → insert new
-            if body.city.is_none() || body.department.is_none() || body.income_status.is_none() {
-                return (StatusCode::BAD_REQUEST, Json("İlk kayıtta şehir, departman ve gelir düzeyi zorunludur")).into_response();
-            }
-            if let Err(e) = sqlx::query(
-                "INSERT INTO students (profile_id, gpa, city, department, income_status, about, semester, family_income, household_size, num_siblings_in_education, has_disability, is_orphan, is_refugee, academic_standing, extracurricular_score) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
-            )
-            .bind(profile_id)
-            .bind(body.gpa)
-            .bind(body.city.as_deref())
-            .bind(department.as_deref())
-            .bind(&body.income_status)
-            .bind(&body.about)
-            .bind(body.semester)
-            .bind(body.family_income)
-            .bind(body.household_size)
-            .bind(body.num_siblings_in_education)
-            .bind(body.has_disability)
-            .bind(body.is_orphan)
-            .bind(body.is_refugee)
-            .bind(&body.academic_standing)
-            .bind(body.extracurricular_score)
-            .execute(&state.db_pool)
-            .await
-            {
-                tracing::error!("Failed to insert student: {}", e);
-                return (StatusCode::INTERNAL_SERVER_ERROR, Json(format!("Failed to create student: {}", e))).into_response();
-            }
-        }
-    };
-
-    let student = sqlx::query_as::<_, Student>(
-        "SELECT profile_id, gpa::float4, city, department, income_status, about, created_at,
-           semester, family_income::float8, household_size, num_siblings_in_education,
-           has_disability, is_orphan, is_refugee, academic_standing::text, extracurricular_score
-           FROM students WHERE profile_id = $1",
-    )
-    .bind(profile_id)
-    .fetch_one(&state.db_pool)
-    .await;
-
-    match student {
-        Ok(s) => (StatusCode::OK, Json(s)).into_response(),
-        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json("Student updated but failed to fetch")).into_response(),
-    }
 }
 
 // --- DONORS ---
@@ -893,7 +890,7 @@ pub async fn create_scholarship(
     if let Some(ref mut deps) = body.target_departments {
         if !deps.is_empty() {
             for dep in deps.iter_mut() {
-                *dep = find_or_create_department(&state, dep).await;
+                *dep = find_or_create_department(&state, dep, state.config.department_similarity_threshold).await;
             }
         }
     }
@@ -1008,7 +1005,7 @@ fn normalize_department(s: &str) -> String {
         .collect()
 }
 
-async fn find_or_create_department(state: &AppState, department: &str) -> String {
+async fn find_or_create_department(state: &AppState, department: &str, similarity_threshold: f64) -> String {
     let departments = sqlx::query_as::<_, Department>("SELECT name FROM departments")
         .fetch_all(&state.db_pool)
         .await
@@ -1019,7 +1016,7 @@ async fn find_or_create_department(state: &AppState, department: &str) -> String
     for existing in &departments {
         let similarity =
             strsim::normalized_levenshtein(&normalized_input, &normalize_department(&existing.name));
-        if similarity > 0.8 {
+        if similarity > similarity_threshold {
             return existing.name.clone();
         }
     }

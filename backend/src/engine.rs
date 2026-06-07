@@ -119,15 +119,7 @@ fn calculate_breakdown(
     }
 
     // ── Scoring Phase ──────────────────────────────────────
-    let w_demo = config.weight_demo;
-    let w_academic = config.weight_academic;
-    let w_need = config.weight_need;
-    let w_extra = config.weight_extra;
-    let norm = w_demo + w_academic + w_need + w_extra;
-    let w_demo = w_demo / norm;
-    let w_academic = w_academic / norm;
-    let w_need = w_need / norm;
-    let w_extra = w_extra / norm;
+    let (w_demo, w_academic, w_need, w_extra) = config.normalized_weights();
 
     // 1. Demographic Fit
     let demo = demographic_score(student, rule) * w_demo;
