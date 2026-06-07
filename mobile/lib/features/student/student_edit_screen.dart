@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
-import '../../providers/student_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../models/update_student_request.dart';
 import '../../models/income_level.dart';
+import '../../providers/student_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/stacked_notification.dart';
 import '../../services/reference_service.dart';
 
 class StudentEditScreen extends ConsumerStatefulWidget {
@@ -90,27 +91,14 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
       await ref.read(studentUpdateProvider).update(widget.profileId, request);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Profil güncellendi'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.smRadius),
-            ),
-          ),
-        );
+        ref.read(notificationStackProvider.notifier).show('Profil güncellendi');
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Güncelleme hatası: $e'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.smRadius),
-            ),
-          ),
+        ref.read(notificationStackProvider.notifier).show(
+          'Güncelleme hatası: $e',
+          isError: true,
         );
       }
     } finally {

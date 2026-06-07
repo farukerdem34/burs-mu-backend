@@ -11,6 +11,7 @@ RegisterRequest _$RegisterRequestFromJson(Map<String, dynamic> json) =>
       email: json['email'] as String,
       password: json['password'] as String,
       role: $enumDecode(_$UserRoleEnumMap, json['role']),
+      name: json['name'] as String?,
       city: json['city'] as String?,
       department: json['department'] as String?,
       incomeStatus: $enumDecodeNullable(
@@ -38,6 +39,7 @@ Map<String, dynamic> _$RegisterRequestToJson(RegisterRequest instance) =>
       'email': instance.email,
       'password': instance.password,
       'role': _$UserRoleEnumMap[instance.role]!,
+      'name': instance.name,
       'city': instance.city,
       'department': instance.department,
       'income_status': _$IncomeLevelEnumMap[instance.incomeStatus],

@@ -31,8 +31,7 @@ class DonorListScreen extends ConsumerWidget {
                             ? Colors.green
                             : Colors.orange,
                       ),
-                      title:
-                          Text('Profil: ${donor.profileId?.substring(0, 8) ?? '-'}...'),
+                      title: Text(donor.name ?? 'Profil: ${donor.profileId?.substring(0, 8) ?? '-'}...'),
                       subtitle: Text(
                         donor.isVerified == true
                             ? 'Doğrulanmış'

@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/match_provider.dart';
 import '../../models/user_role.dart';
+import '../../widgets/stacked_notification.dart';
 import '../auth/login_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -298,14 +299,15 @@ class HomeScreen extends ConsumerWidget {
           try {
             await ref.read(matchServiceProvider).runMatching();
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Eşleştirme başlatıldı')),
+              ref.read(notificationStackProvider.notifier).show(
+                'Eşleştirme başlatıldı',
               );
             }
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Hata: $e')),
+              ref.read(notificationStackProvider.notifier).show(
+                'Hata: $e',
+                isError: true,
               );
             }
           }

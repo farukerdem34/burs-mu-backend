@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'core/theme.dart';
 import 'features/auth/login_screen.dart';
@@ -14,6 +15,7 @@ import 'features/scholarship/scholarship_detail_screen.dart';
 import 'features/scholarship/scholarship_create_screen.dart';
 import 'features/admin/donor_verify_screen.dart';
 import 'features/admin/department_manage_screen.dart';
+import 'widgets/stacked_notification.dart';
 
 final _router = GoRouter(
   initialLocation: '/',
@@ -96,16 +98,29 @@ final _router = GoRouter(
   ],
 );
 
-class BursApp extends StatelessWidget {
+class BursApp extends ConsumerWidget {
   const BursApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: 'Burs Eşleştirme',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: _router,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child ?? const SizedBox.shrink(),
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: StackedNotificationOverlay(),
+            ),
+          ],
+        );
+      },
     );
   }
 }

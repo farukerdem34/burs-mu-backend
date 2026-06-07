@@ -22,6 +22,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
   final _gpaController = TextEditingController();
   final _familyIncomeController = TextEditingController();
   final _householdSizeController = TextEditingController();
@@ -112,6 +113,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _nameController.dispose();
     _gpaController.dispose();
     _familyIncomeController.dispose();
     _householdSizeController.dispose();
@@ -165,6 +167,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       email: _emailController.text.trim(),
       password: _passwordController.text,
       role: _role,
+      name: _role == UserRole.donor ? _nameController.text.trim() : null,
       city: _role == UserRole.student ? _selectedCity : null,
       department: _role == UserRole.student ? _selectedDepartment : null,
       incomeStatus: _role == UserRole.student ? _incomeStatus : null,
@@ -477,6 +480,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 textInputAction: TextInputAction.next,
                 validator: _validatePassword,
               ),
+              if (_role == UserRole.donor) ...[
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Kurum veya Kişi Adı',
+                    prefixIcon: Icon(Icons.business, size: 20),
+                  ),
+                  textInputAction: TextInputAction.next,
+                ),
+              ],
               const SizedBox(height: 20),
               DropdownButtonFormField<UserRole>(
                 initialValue: _role,
@@ -750,6 +764,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               _buildInfoRow('E-posta', _emailController.text, cs),
               const SizedBox(height: 16),
               _buildInfoRow('Rol', _role.displayName, cs),
+              if (_role == UserRole.donor) ...[
+                const Divider(height: 24),
+                _buildInfoRow('Ad', displayValue(_nameController.text), cs),
+              ],
               if (_role == UserRole.student) ...[
                 const Divider(height: 24),
                 _buildInfoRow('Şehir', displayValue(_selectedCity), cs),

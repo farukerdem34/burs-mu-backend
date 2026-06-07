@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/scholarship_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../models/create_scholarship_request.dart';
 import '../../models/income_level.dart';
+import '../../providers/scholarship_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/reference_service.dart';
+import '../../widgets/stacked_notification.dart';
 
 class ScholarshipCreateScreen extends ConsumerStatefulWidget {
   const ScholarshipCreateScreen({super.key});
@@ -84,16 +85,12 @@ class _ScholarshipCreateScreenState
       await ref.read(scholarshipServiceProvider).create(request);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Burs oluşturuldu')),
-        );
+        ref.read(notificationStackProvider.notifier).show('Burs oluşturuldu');
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
-        );
+        ref.read(notificationStackProvider.notifier).show('Hata: $e', isError: true);
       }
     }
   }

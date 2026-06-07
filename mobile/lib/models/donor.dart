@@ -6,6 +6,7 @@ part 'donor.g.dart';
 class Donor {
   @JsonKey(name: 'profile_id')
   final String? profileId;
+  final String? name;
   @JsonKey(name: 'is_verified')
   final bool? isVerified;
   @JsonKey(name: 'created_at')
@@ -13,6 +14,7 @@ class Donor {
 
   Donor({
     this.profileId,
+    this.name,
     this.isVerified,
     this.createdAt,
   });

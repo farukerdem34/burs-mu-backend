@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/donor_provider.dart';
+import '../../widgets/stacked_notification.dart';
 
 class DonorVerifyScreen extends ConsumerWidget {
   const DonorVerifyScreen({super.key});
@@ -31,40 +32,38 @@ class DonorVerifyScreen extends ConsumerWidget {
               return Card(
                 child: ListTile(
                   leading: const Icon(Icons.pending, color: Colors.orange),
-                  title: Text(
-                    'Profil: ${donor.profileId?.substring(0, 8)}...',
-                  ),
+                  title: Text(donor.name ?? 'Profil: ${donor.profileId?.substring(0, 8) ?? '-'}...'),
                   subtitle: Text(
                     'Oluşturulma: ${donor.createdAt?.toString().substring(0, 10) ?? '-'}',
                   ),
-                  trailing: SizedBox(
-                    width: 100,
-                    child: ElevatedButton(
+                  trailing: TextButton(
                     onPressed: () async {
                       try {
                         await ref
                             .read(donorServiceProvider)
                             .verify(donor.profileId!);
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Donör ${donor.profileId?.substring(0, 8)} doğrulandı',
-                              ),
-                            ),
+                          ref.read(notificationStackProvider.notifier).show(
+                            'Donör ${donor.name ?? donor.profileId?.substring(0, 8) ?? ''} doğrulandı',
                           );
                           ref.invalidate(donorListProvider);
                         }
                       } catch (e) {
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Hata: $e')),
+                          ref.read(notificationStackProvider.notifier).show(
+                            'Hata: $e',
+                            isError: true,
                           );
                         }
                       }
                     },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     child: const Text('Doğrula'),
-                  ),
                   ),
                 ),
               );

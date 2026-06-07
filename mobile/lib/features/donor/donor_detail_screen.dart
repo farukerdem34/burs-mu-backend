@@ -22,6 +22,8 @@ class DonorDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (donor.name != null)
+                  _infoRow('Ad', donor.name!),
                 _infoRow('Profil ID', donor.profileId ?? '-'),
                 _infoRow(
                   'Durum',

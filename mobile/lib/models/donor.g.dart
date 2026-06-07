@@ -8,6 +8,7 @@ part of 'donor.dart';
 
 Donor _$DonorFromJson(Map<String, dynamic> json) => Donor(
   profileId: json['profile_id'] as String?,
+  name: json['name'] as String?,
   isVerified: json['is_verified'] as bool?,
   createdAt: json['created_at'] == null
       ? null
@@ -16,6 +17,7 @@ Donor _$DonorFromJson(Map<String, dynamic> json) => Donor(
 
 Map<String, dynamic> _$DonorToJson(Donor instance) => <String, dynamic>{
   'profile_id': instance.profileId,
+  'name': instance.name,
   'is_verified': instance.isVerified,
   'created_at': instance.createdAt?.toIso8601String(),
 };

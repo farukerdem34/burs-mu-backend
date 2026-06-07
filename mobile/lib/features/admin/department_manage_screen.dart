@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/reference_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/constants.dart';
+import '../../widgets/stacked_notification.dart';
 
 class DepartmentManageScreen extends ConsumerStatefulWidget {
   const DepartmentManageScreen({super.key});
@@ -43,16 +44,12 @@ class _DepartmentManageScreenState
       final dio = ref.read(dioProvider);
       await dio.post(ApiConstants.departments, data: {'name': name});
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"$name" oluşturuldu')),
-        );
+        ref.read(notificationStackProvider.notifier).show('"$name" oluşturuldu');
         _loadDepartments();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
-        );
+        ref.read(notificationStackProvider.notifier).show('Hata: $e', isError: true);
       }
     }
   }
@@ -115,16 +112,12 @@ class _DepartmentManageScreenState
       final refService = ReferenceService(dio);
       await refService.deleteDepartment(name);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"$name" silindi')),
-        );
+        ref.read(notificationStackProvider.notifier).show('"$name" silindi');
         _loadDepartments();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
-        );
+        ref.read(notificationStackProvider.notifier).show('Hata: $e', isError: true);
       }
     }
   }

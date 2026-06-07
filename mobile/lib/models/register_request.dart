@@ -10,6 +10,7 @@ class RegisterRequest {
   final String email;
   final String password;
   final UserRole role;
+  final String? name;
   final String? city;
   final String? department;
   @JsonKey(name: 'income_status')
@@ -37,6 +38,7 @@ class RegisterRequest {
     required this.email,
     required this.password,
     required this.role,
+    this.name,
     this.city,
     this.department,
     this.incomeStatus,
