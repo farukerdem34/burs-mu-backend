@@ -36,8 +36,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _portController.text = config.port.toString();
       setState(() => _useHttps = config.useHttps);
     } else {
-      _hostController.text = '127.0.0.1';
-      _portController.text = '8080';
+      _hostController.text = 'bursmu-api.ofesec.net';
+      _portController.text = '80';
     }
   }
 
@@ -49,8 +49,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   ApiConfig _buildConfig() {
-    final host = _hostController.text.trim().isEmpty ? '127.0.0.1' : _hostController.text.trim();
-    final port = int.tryParse(_portController.text.trim()) ?? 8080;
+    final host = _hostController.text.trim().isEmpty ? 'bursmu-api.ofesec.net' : _hostController.text.trim();
+    final port = int.tryParse(_portController.text.trim()) ?? 80;
     return ApiConfig(host: host, port: port, useHttps: _useHttps);
   }
 

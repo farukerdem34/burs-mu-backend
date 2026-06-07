@@ -6,8 +6,8 @@ class ApiConfig {
   final bool useHttps;
 
   const ApiConfig({
-    this.host = '127.0.0.1',
-    this.port = 8080,
+    this.host = 'bursmu-api.ofesec.net',
+    this.port = 80,
     this.useHttps = false,
   });
 
@@ -32,8 +32,8 @@ class ApiConfig {
       };
 
   factory ApiConfig.fromJson(Map<String, dynamic> json) => ApiConfig(
-        host: json['host'] as String? ?? '127.0.0.1',
-        port: json['port'] as int? ?? 8080,
+        host: json['host'] as String? ?? 'bursmu-api.ofesec.net',
+        port: json['port'] as int? ?? 80,
         useHttps: json['useHttps'] as bool? ?? false,
       );
 
