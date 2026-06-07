@@ -49,8 +49,10 @@ class MatchResultScreen extends ConsumerWidget {
                 (s) => s.id == match.scholarshipId,
               ).firstOrNull;
 
+              final score = match.score;
               return _MatchCard(
                 title: scholarship?.title ?? 'Burs #${match.scholarshipId?.substring(0, 8) ?? '-'}',
+                score: score,
                 onTap: match.scholarshipId != null
                     ? () => context.push('/scholarships/${match.scholarshipId}')
                     : null,
@@ -65,16 +67,20 @@ class MatchResultScreen extends ConsumerWidget {
 
 class _MatchCard extends StatelessWidget {
   final String title;
+  final double? score;
   final VoidCallback? onTap;
 
   const _MatchCard({
     required this.title,
+    this.score,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final displayScore = score != null ? score!.round() : null;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: ListTile(
@@ -90,13 +96,41 @@ class _MatchCard extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: theme.colorScheme.onSurfaceVariant,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (displayScore != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _scoreColor(displayScore, theme).withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$displayScore',
+                  style: TextStyle(
+                    color: _scoreColor(displayScore, theme),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
         ),
         onTap: onTap,
       ),
     );
+  }
+
+  Color _scoreColor(int score, ThemeData theme) {
+    if (score >= 90) return Colors.green;
+    if (score >= 80) return Colors.amber.shade700;
+    return Colors.orange;
   }
 }
 
