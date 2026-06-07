@@ -17,6 +17,10 @@ use crate::models::{
 };
 use crate::state::AppState;
 
+pub async fn health() -> impl IntoResponse {
+    (StatusCode::OK, Json(json!({"status": "ok"})))
+}
+
 pub async fn match_student(
     State(state): State<AppState>,
     auth: AuthUser,

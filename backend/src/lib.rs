@@ -14,6 +14,7 @@ pub fn build_router(state: state::AppState) -> Router {
     let cors = CorsLayer::permissive();
 
     Router::new()
+        .route("/health", get(handlers::health))
         .route("/match/run", post(handlers::run_matching_handler))
         .route("/match/:student_id", post(handlers::match_student))
         .route("/register", post(handlers::register))

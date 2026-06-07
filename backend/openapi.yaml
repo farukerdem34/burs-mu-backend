@@ -12,6 +12,26 @@ servers:
     description: Local development (Docker)
 
 paths:
+  # ── Health ──────────────────────────────────────────
+  /health:
+    get:
+      summary: Sunucu sağlık kontrolü
+      description: |
+        Client-server bağlantısını test etmek için kullanılır.
+        Authentication gerektirmez. Her zaman 200 döner.
+      tags: [Sağlık]
+      responses:
+        "200":
+          description: Sunucu çalışıyor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
   # ── Auth ────────────────────────────────────────────
   /register:
     post:
