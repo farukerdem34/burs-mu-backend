@@ -12,6 +12,7 @@
 | `city` | string | No | Rol 'student' ise kayıt anında girilebilir, sonradan da eklenebilir. |
 | `department` | string | No | Rol 'student' ise kayıt anında girilebilir, sonradan da eklenebilir. Benzer isimler otomatik eşleştirilir. |
 | `income_status` | [IncomeLevel](IncomeLevel.md) | No |  |
+| `name` | string | No | Kurum veya kişi adı (rol 'donor' ise kayıt anında girilebilir) |
 | `gpa` | number (float) | No | Not ortalaması (opsiyonel) |
 | `semester` | integer | No | Kaçıncı dönem (opsiyonel) |
 | `family_income` | number (double) | No | Aylık aile geliri TL (opsiyonel) |
