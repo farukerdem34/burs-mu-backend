@@ -68,11 +68,13 @@ class SecureStorage {
 
   static Future<void> clear() async {
     try {
-      await _storage.deleteAll();
+      await _storage.delete(key: _tokenKey);
+      await _storage.delete(key: _roleKey);
     } catch (_) {
-      _fallback.clear();
+      _fallback.remove(_tokenKey);
+      _fallback.remove(_roleKey);
     }
-    _cachedApiConfig = null;
-    _fallback.clear();
+    _fallback.remove(_tokenKey);
+    _fallback.remove(_roleKey);
   }
 }
