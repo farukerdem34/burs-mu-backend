@@ -104,3 +104,8 @@ No test suite exists yet (no `tests/` directory in `backend/`, no `test/` files 
 - **Mobile API base**: default `http://127.0.0.1:8080`, overridable via `--dart-define=API_BASE_URL=...`.
 - **Mobile KNOWN_BUGS.md**: admin account gets 401 everywhere.
 - **Implementation status**: Backend complete. Mobile scaffolded with all 9 task files in `mobile/tasks/`; feature screens, models, services, providers, and widgets are written.
+
+
+## Task Completion 
+
+After completing each task, review the changes and commit all changes using Git version controlling system
