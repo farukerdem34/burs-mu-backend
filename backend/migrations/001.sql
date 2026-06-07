@@ -95,6 +95,7 @@ CREATE POLICY "Students can view their own data" ON public.students FOR SELECT U
 -- 5. DONORS
 CREATE TABLE public.donors (
     profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE PRIMARY KEY,
+    name TEXT,
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -187,8 +188,8 @@ INSERT INTO public.students (profile_id, gpa, city, department, income_status) V
 ON CONFLICT (profile_id) DO NOTHING;
 
 -- Donors
-INSERT INTO public.donors (profile_id, is_verified) VALUES
-('00000000-0000-0000-0000-000000000003', TRUE)
+INSERT INTO public.donors (profile_id, name, is_verified) VALUES
+('00000000-0000-0000-0000-000000000003', 'Test Donor', TRUE)
 ON CONFLICT (profile_id) DO NOTHING;
 
 -- Scholarships

@@ -342,8 +342,9 @@ pub async fn register(
 
     // If donor role, create donor record
     if body.role == crate::models::UserRole::Donor {
-        if let Err(e) = sqlx::query("INSERT INTO donors (profile_id, is_verified) VALUES ($1, false)")
+        if let Err(e) = sqlx::query("INSERT INTO donors (profile_id, name, is_verified) VALUES ($1, $2, false)")
             .bind(user_id)
+            .bind(&body.name)
             .execute(&state.db_pool)
             .await
         {
@@ -744,7 +745,7 @@ pub async fn get_donors(
             .into_response();
     }
     match sqlx::query_as::<_, Donor>(
-        "SELECT profile_id, is_verified, created_at FROM donors ORDER BY created_at DESC",
+        "SELECT profile_id, name, is_verified, created_at FROM donors ORDER BY created_at DESC",
     )
     .fetch_all(&state.db_pool)
     .await
@@ -766,7 +767,7 @@ pub async fn get_donor(
     Path(profile_id): Path<Uuid>,
 ) -> impl IntoResponse {
     match sqlx::query_as::<_, Donor>(
-        "SELECT profile_id, is_verified, created_at FROM donors WHERE profile_id = $1",
+        "SELECT profile_id, name, is_verified, created_at FROM donors WHERE profile_id = $1",
     )
     .bind(profile_id)
     .fetch_one(&state.db_pool)
@@ -797,7 +798,7 @@ pub async fn verify_donor(
     {
         Ok(res) if res.rows_affected() > 0 => {
             let donor = sqlx::query_as::<_, Donor>(
-                "SELECT profile_id, is_verified, created_at FROM donors WHERE profile_id = $1",
+                "SELECT profile_id, name, is_verified, created_at FROM donors WHERE profile_id = $1",
             )
             .bind(profile_id)
             .fetch_one(&state.db_pool)

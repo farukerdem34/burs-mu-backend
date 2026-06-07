@@ -653,6 +653,10 @@ components:
         profile_id:
           type: string
           format: uuid
+        name:
+          type: string
+          nullable: true
+          description: Kurum veya kişi adı
         is_verified:
           type: boolean
         created_at:
@@ -879,6 +883,10 @@ components:
         income_status:
           $ref: "#/components/schemas/IncomeLevel"
           description: "Rol 'student' ise kayıt anında girilebilir, sonradan da eklenebilir."
+        name:
+          type: string
+          description: "Kurum veya kişi adı (rol 'donor' ise kayıt anında girilebilir)"
+          example: ACME Burs Fonu
         gpa:
           type: number
           format: float

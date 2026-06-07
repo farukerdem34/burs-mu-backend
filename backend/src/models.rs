@@ -194,6 +194,7 @@ pub struct Student {
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
 pub struct Donor {
     pub profile_id: Uuid,
+    pub name: Option<String>,
     pub is_verified: bool,
     pub created_at: Option<DateTime<Utc>>,
 }
@@ -311,6 +312,7 @@ pub struct RegisterRequest {
     pub city: Option<String>,
     pub department: Option<String>,
     pub income_status: Option<IncomeLevel>,
+    pub name: Option<String>,
     pub gpa: Option<f32>,
     pub semester: Option<i16>,
     pub family_income: Option<f64>,
