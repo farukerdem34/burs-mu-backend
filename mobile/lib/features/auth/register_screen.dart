@@ -55,6 +55,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     return ['Hesap', 'Tamamla'];
   }
 
+  List<IconData> get _stepIcons {
+    if (_role == UserRole.student) {
+      return [
+        Icons.person_outline,
+        Icons.description_outlined,
+        Icons.school_outlined,
+        Icons.family_restroom,
+        Icons.check_circle_outlined,
+      ];
+    }
+    return [
+      Icons.person_outline,
+      Icons.check_circle_outlined,
+    ];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -257,6 +273,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
   Widget _buildStepIndicator(ColorScheme cs) {
     final steps = _stepLabels;
+    final icons = _stepIcons;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -266,12 +283,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             children: List.generate(steps.length * 2 - 1, (i) {
               if (i.isOdd) {
                 final stepIdx = i ~/ 2;
-                final isActive = stepIdx == _currentStep;
                 final isPast = stepIdx < _currentStep;
                 return Expanded(
                   child: Container(
                     height: 2,
-                    color: isPast || isActive
+                    color: isPast
                         ? cs.primary
                         : cs.outlineVariant.withAlpha(80),
                   ),
@@ -294,15 +310,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 child: Center(
                   child: isPast
                       ? Icon(Icons.check, size: 16, color: cs.onPrimary)
-                      : Text(
-                          '${stepIdx + 1}',
-                          style: GoogleFonts.publicSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isActive
-                                ? cs.onPrimary
-                                : cs.onSurfaceVariant,
-                          ),
+                      : Icon(
+                          icons[stepIdx],
+                          size: 16,
+                          color: isActive
+                              ? cs.onPrimary
+                              : cs.onSurfaceVariant,
                         ),
                 ),
               );
@@ -313,20 +326,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             children: List.generate(steps.length * 2 - 1, (i) {
               if (i.isOdd) return const Expanded(child: SizedBox());
               final stepIdx = i ~/ 2;
+              final isActive = stepIdx == _currentStep;
               return Expanded(
-                child: Text(
-                  steps[stepIdx],
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.publicSans(
-                    fontSize: 11,
-                    fontWeight: stepIdx == _currentStep
-                        ? FontWeight.w600
-                        : FontWeight.w500,
-                    color: stepIdx == _currentStep
-                        ? cs.primary
-                        : cs.onSurfaceVariant,
-                    letterSpacing: 0.5,
-                  ),
+                child: Icon(
+                  icons[stepIdx],
+                  size: 18,
+                  color: isActive ? cs.primary : cs.onSurfaceVariant,
                 ),
               );
             }),

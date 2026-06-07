@@ -179,8 +179,6 @@ class HomeScreen extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
 
     return [
-      _buildQuickStats(context),
-      const SizedBox(height: 28),
       _buildSectionTitle('İşlemler', context),
       const SizedBox(height: 12),
       _buildActionCard(
