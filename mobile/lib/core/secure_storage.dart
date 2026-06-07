@@ -45,7 +45,10 @@ class SecureStorage {
     }
   }
 
+  static ApiConfig? _cachedApiConfig;
+
   static Future<void> saveApiConfig(ApiConfig config) async {
+    _cachedApiConfig = config;
     final data = config.encode();
     try {
       await _storage.write(key: _apiConfigKey, value: data);
@@ -55,9 +58,12 @@ class SecureStorage {
   static Future<ApiConfig?> getApiConfig() async {
     try {
       final data = await _storage.read(key: _apiConfigKey);
-      if (data != null) return ApiConfig.decode(data);
+      if (data != null) {
+        _cachedApiConfig = ApiConfig.decode(data);
+        return _cachedApiConfig;
+      }
     } catch (_) {}
-    return null;
+    return _cachedApiConfig;
   }
 
   static Future<void> clear() async {
@@ -66,6 +72,7 @@ class SecureStorage {
     } catch (_) {
       _fallback.clear();
     }
+    _cachedApiConfig = null;
     _fallback.clear();
   }
 }
