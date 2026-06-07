@@ -294,6 +294,30 @@ paths:
         "404":
           description: Donor bulunamadı
 
+  /donors/{profile_id}/scholarships:
+    get:
+      summary: Donora ait bursları listele
+      description: Belirtilen donora ait tüm bursları getirir.
+      tags: [Donorlar]
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Donora ait burs listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Scholarship"
+        "500":
+          description: Burslar alınamadı
+
   /donors/{profile_id}/verify:
     post:
       summary: Donoru yönetici onayı ile doğrula

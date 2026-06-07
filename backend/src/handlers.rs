@@ -778,6 +778,35 @@ pub async fn get_donor(
     }
 }
 
+pub async fn get_donor_scholarships(
+    State(state): State<AppState>,
+    Path(profile_id): Path<Uuid>,
+) -> impl IntoResponse {
+    match sqlx::query_as::<_, Scholarship>(
+        "SELECT id, donor_id, title, quota, is_active, min_gpa::float4,
+           target_cities, target_departments, target_income_levels,
+           amount_per_year::float8, duration_months, scholarship_type,
+           preferred_gender, requires_essay, requires_interview,
+           accepts_disability, accepts_orphan, accepts_refugee,
+           max_semester, min_extracurricular_score, max_household_income::float8, created_at
+           FROM scholarships WHERE donor_id = $1 ORDER BY created_at DESC",
+    )
+    .bind(profile_id)
+    .fetch_all(&state.db_pool)
+    .await
+    {
+        Ok(scholarships) => (StatusCode::OK, Json(scholarships)).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to fetch donor scholarships: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(format!("Failed to fetch donor scholarships: {}", e)),
+            )
+                .into_response()
+        }
+    }
+}
+
 pub async fn verify_donor(
     State(state): State<AppState>,
     auth: AuthUser,

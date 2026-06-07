@@ -18,7 +18,7 @@ This API documentation is split into multiple files for on-demand loading.
 ```
 references/
 ├── resources/      # 7 resource index files
-├── operations/     # 23 operation detail files
+├── operations/     # 24 operation detail files
 └── schemas/        # 15 schema groups, 22 schema files
 ```
 
@@ -41,8 +41,8 @@ Supported methods: **BearerAuth**. See `references/authentication.md` for detail
 
 - **Öğrenciler** → `references/resources/Öğrenciler.md` (5 ops)
 - **Referanslar** → `references/resources/Referanslar.md` (5 ops)
+- **Donorlar** → `references/resources/Donorlar.md` (4 ops)
 - **Profiller** → `references/resources/Profiller.md` (3 ops)
-- **Donorlar** → `references/resources/Donorlar.md` (3 ops)
 - **Burslar** → `references/resources/Burslar.md` (3 ops)
 - **Auth** → `references/resources/Auth.md` (2 ops)
 - **Eşleştirme** → `references/resources/Eşleştirme.md` (2 ops)

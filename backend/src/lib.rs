@@ -34,6 +34,7 @@ pub fn build_router(state: state::AppState) -> Router {
         .route("/students/:profile_id/matches", get(handlers::get_student_matches))
         .route("/donors", get(handlers::get_donors))
         .route("/donors/:profile_id", get(handlers::get_donor))
+        .route("/donors/:profile_id/scholarships", get(handlers::get_donor_scholarships))
         .route("/donors/:profile_id/verify", post(handlers::verify_donor))
         .route(
             "/scholarships",
