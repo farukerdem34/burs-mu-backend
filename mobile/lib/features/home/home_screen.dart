@@ -209,8 +209,7 @@ class HomeScreen extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
 
     return [
-      _buildQuickStats(context),
-      SizedBox(height: context.h(28)),
+      SizedBox(height: context.h(12)),
       _buildSectionTitle('İşlemler', context),
       SizedBox(height: context.h(12)),
       _buildActionCard(
@@ -305,87 +304,6 @@ class HomeScreen extends ConsumerWidget {
         },
       ),
     ];
-  }
-
-  Widget _buildQuickStats(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      height: context.h(88),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: EdgeInsets.all(context.w(16)),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppTheme.mdRadius),
-                border: Border.all(color: cs.outlineVariant.withAlpha(25)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.account_balance, color: cs.primary, size: context.f(22)),
-                  const Spacer(),
-                  Text(
-                    'Burslar',
-                    style: AppTheme.publicSans(context,
-                      size: 11, weight: FontWeight.w500, letterSpacing: 0.5, color: cs.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(width: context.w(12)),
-          Expanded(
-            child: Container(
-              padding: EdgeInsets.all(context.w(16)),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppTheme.mdRadius),
-                border: Border.all(color: cs.outlineVariant.withAlpha(25)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.assessment, color: cs.tertiary, size: context.f(22)),
-                  const Spacer(),
-                  Text(
-                    'Eşleşmeler',
-                    style: AppTheme.publicSans(context,
-                      size: 11, weight: FontWeight.w500, letterSpacing: 0.5, color: cs.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(width: context.w(12)),
-          Expanded(
-            child: Container(
-              padding: EdgeInsets.all(context.w(16)),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppTheme.mdRadius),
-                border: Border.all(color: cs.outlineVariant.withAlpha(25)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.stars_outlined,
-                      color: const Color(0xFF7B61FF), size: context.f(22)),
-                  const Spacer(),
-                  Text(
-                    'Puan',
-                    style: AppTheme.publicSans(context,
-                      size: 11, weight: FontWeight.w500, letterSpacing: 0.5, color: cs.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildSectionTitle(String title, BuildContext context) {
