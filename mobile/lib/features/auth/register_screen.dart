@@ -317,21 +317,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               );
             }),
           ),
-          SizedBox(height: context.h(8)),
-          Row(
-            children: List.generate(steps.length * 2 - 1, (i) {
-              if (i.isOdd) return const Expanded(child: SizedBox());
-              final stepIdx = i ~/ 2;
-              final isActive = stepIdx == _currentStep;
-              return Expanded(
-                child: Icon(
-                  icons[stepIdx],
-                  size: context.f(18),
-                  color: isActive ? cs.primary : cs.onSurfaceVariant,
-                ),
-              );
-            }),
-          ),
         ],
       ),
     );
