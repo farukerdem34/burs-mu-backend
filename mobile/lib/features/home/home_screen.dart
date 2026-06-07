@@ -8,6 +8,7 @@ import '../../providers/match_provider.dart';
 import '../../models/user_role.dart';
 import '../../widgets/stacked_notification.dart';
 import '../auth/login_screen.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -89,6 +90,26 @@ class HomeScreen extends ConsumerWidget {
                         ),
                       ),
                       const Spacer(),
+                      Container(
+                        width: context.w(36),
+                        height: context.w(36),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(30),
+                          borderRadius: BorderRadius.circular(context.w(10)),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.settings, color: Colors.white, size: 20),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(width: context.w(8)),
                       Container(
                         width: context.w(36),
                         height: context.w(36),

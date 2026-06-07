@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../core/screen_utils.dart';
 import '../../providers/auth_provider.dart';
+import '../settings/settings_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -74,29 +75,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: context.w(24)),
-              child: FadeTransition(
-                opacity: _fadeSlide,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.06),
-                    end: Offset.zero,
-                  ).animate(_fadeSlide),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildHero(context),
-                      SizedBox(height: context.h(40)),
-                      _buildFormCard(context, authState),
-                      SizedBox(height: context.h(24)),
-                      _buildFooter(context),
-                    ],
+          child: Stack(
+            children: [
+              Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: context.w(24)),
+                  child: FadeTransition(
+                    opacity: _fadeSlide,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.06),
+                        end: Offset.zero,
+                      ).animate(_fadeSlide),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildHero(context),
+                          SizedBox(height: context.h(40)),
+                          _buildFormCard(context, authState),
+                          SizedBox(height: context.h(24)),
+                          _buildFooter(context),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+              Positioned(
+                top: context.h(8),
+                right: context.w(8),
+                child: Container(
+                  width: context.w(40),
+                  height: context.w(40),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerLow.withAlpha(180),
+                    borderRadius: BorderRadius.circular(context.w(10)),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.settings, size: 22),
+                    color: cs.onSurfaceVariant,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
