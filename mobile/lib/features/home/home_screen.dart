@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
+import '../../core/screen_utils.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/match_provider.dart';
 import '../../models/user_role.dart';
@@ -27,11 +27,11 @@ class HomeScreen extends ConsumerWidget {
         slivers: [
           _buildSliverAppBar(context, authState, ref),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+            padding: EdgeInsets.fromLTRB(context.w(20), context.h(24), context.w(20), context.h(32)),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 _buildGreeting(context, authState),
-                const SizedBox(height: 24),
+                SizedBox(height: context.h(24)),
                 if (role == UserRole.student) ..._studentContent(context, authState.token),
                 if (role == UserRole.donor) ..._donorContent(context, authState.token),
                 if (role == UserRole.admin) ..._adminContent(context, ref),
@@ -48,7 +48,7 @@ class HomeScreen extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
 
     return SliverAppBar(
-      expandedHeight: 180,
+      expandedHeight: context.screenHeight * 0.28,
       pinned: true,
       backgroundColor: cs.surface,
       surfaceTintColor: Colors.transparent,
@@ -69,35 +69,35 @@ class HomeScreen extends ConsumerWidget {
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
+              padding: EdgeInsets.fromLTRB(context.w(20), context.h(16), context.w(20), context.h(16)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: context.w(36),
+                        height: context.w(36),
                         decoration: BoxDecoration(
                           color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(context.w(10)),
                         ),
                         child: const Icon(
                           Icons.school,
                           color: Colors.white,
-                          size: 24,
+                          size: 20,
                         ),
                       ),
                       const Spacer(),
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: context.w(36),
+                        height: context.w(36),
                         decoration: BoxDecoration(
                           color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(context.w(10)),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.logout, color: Colors.white),
+                          icon: const Icon(Icons.logout, color: Colors.white, size: 20),
                           onPressed: () async {
                             await ref
                                 .read(authProvider.notifier)
@@ -114,8 +114,8 @@ class HomeScreen extends ConsumerWidget {
                   Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: context.w(32),
+                        height: context.w(32),
                         decoration: BoxDecoration(
                           color: Colors.white.withAlpha(40),
                           shape: BoxShape.circle,
@@ -126,23 +126,18 @@ class HomeScreen extends ConsumerWidget {
                                     ? authState.role!.displayName[0]
                                     : '?')
                                 .toUpperCase(),
-                            style: GoogleFonts.publicSans(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                            style: AppTheme.publicSans(context,
+                              size: 18, weight: FontWeight.w600, color: Colors.white),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: context.w(12)),
                       Text(
                         authState.role?.displayName ?? '',
-                        style: GoogleFonts.publicSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                        style: AppTheme.publicSans(context,
+                          size: 14, weight: FontWeight.w500,
                           color: Colors.white.withAlpha(200),
-                          letterSpacing: 0.5,
-                        ),
+                          letterSpacing: 0.5),
                       ),
                     ],
                   ),
@@ -166,12 +161,8 @@ class HomeScreen extends ConsumerWidget {
 
     return Text(
       greeting,
-      style: GoogleFonts.notoSerif(
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-        height: 1.2,
-        color: cs.onSurface,
-      ),
+      style: AppTheme.notoSerif(context,
+        size: 24, weight: FontWeight.w700, height: 1.2, color: cs.onSurface),
     );
   }
 
@@ -180,7 +171,7 @@ class HomeScreen extends ConsumerWidget {
 
     return [
       _buildSectionTitle('İşlemler', context),
-      const SizedBox(height: 12),
+      SizedBox(height: context.h(12)),
       _buildActionCard(
         context,
         icon: Icons.account_balance,
@@ -189,7 +180,7 @@ class HomeScreen extends ConsumerWidget {
         subtitle: 'Size uygun bursları görüntüleyin',
         onTap: () => context.push('/scholarships'),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: context.h(12)),
       _buildActionCard(
         context,
         icon: Icons.assessment,
@@ -198,7 +189,7 @@ class HomeScreen extends ConsumerWidget {
         subtitle: 'Burs eşleşme puanlarınızı inceleyin',
         onTap: () => context.push('/match'),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: context.h(12)),
       _buildActionCard(
         context,
         icon: Icons.edit,
@@ -219,9 +210,9 @@ class HomeScreen extends ConsumerWidget {
 
     return [
       _buildQuickStats(context),
-      const SizedBox(height: 28),
+      SizedBox(height: context.h(28)),
       _buildSectionTitle('İşlemler', context),
-      const SizedBox(height: 12),
+      SizedBox(height: context.h(12)),
       _buildActionCard(
         context,
         icon: Icons.list_alt,
@@ -232,7 +223,7 @@ class HomeScreen extends ConsumerWidget {
             ? context.push('/donors/$profileId/scholarships')
             : context.push('/scholarships'),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: context.h(12)),
       _buildActionCard(
         context,
         icon: Icons.add_circle,
@@ -249,7 +240,7 @@ class HomeScreen extends ConsumerWidget {
 
     return [
       _buildSectionTitle('Yönetim', context),
-      const SizedBox(height: 12),
+      SizedBox(height: context.h(12)),
       _buildActionCard(
         context,
         icon: Icons.verified_user,
@@ -258,7 +249,7 @@ class HomeScreen extends ConsumerWidget {
         subtitle: 'Donör hesaplarını onaylayın',
         onTap: () => context.push('/admin/verify-donors'),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: context.h(12)),
       _buildActionCard(
         context,
         icon: Icons.business,
@@ -267,7 +258,7 @@ class HomeScreen extends ConsumerWidget {
         subtitle: 'Donör listesini görüntüleyin',
         onTap: () => context.push('/donors'),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: context.h(12)),
 
       _buildActionCard(
         context,
@@ -277,7 +268,7 @@ class HomeScreen extends ConsumerWidget {
         subtitle: 'Yeni bir burs ilanı ekleyin',
         onTap: () => context.push('/scholarships/create'),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: context.h(12)),
       _buildActionCard(
         context,
         icon: Icons.category,
@@ -286,9 +277,9 @@ class HomeScreen extends ConsumerWidget {
         subtitle: 'Bölümleri ekleyin veya kaldırın',
         onTap: () => context.push('/admin/departments'),
       ),
-      const SizedBox(height: 24),
+      SizedBox(height: context.h(24)),
       _buildSectionTitle('Eşleştirme', context),
-      const SizedBox(height: 12),
+      SizedBox(height: context.h(12)),
       _buildActionCard(
         context,
         icon: Icons.sync,
@@ -320,12 +311,12 @@ class HomeScreen extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
 
     return SizedBox(
-      height: 88,
+      height: context.h(88),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(context.w(16)),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppTheme.mdRadius),
@@ -334,25 +325,21 @@ class HomeScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.account_balance, color: cs.primary, size: 22),
+                  Icon(Icons.account_balance, color: cs.primary, size: context.f(22)),
                   const Spacer(),
                   Text(
                     'Burslar',
-                    style: GoogleFonts.publicSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
-                      color: cs.onSurfaceVariant,
-                    ),
+                    style: AppTheme.publicSans(context,
+                      size: 11, weight: FontWeight.w500, letterSpacing: 0.5, color: cs.onSurfaceVariant),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: context.w(12)),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(context.w(16)),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppTheme.mdRadius),
@@ -361,25 +348,21 @@ class HomeScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.assessment, color: cs.tertiary, size: 22),
+                  Icon(Icons.assessment, color: cs.tertiary, size: context.f(22)),
                   const Spacer(),
                   Text(
                     'Eşleşmeler',
-                    style: GoogleFonts.publicSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
-                      color: cs.onSurfaceVariant,
-                    ),
+                    style: AppTheme.publicSans(context,
+                      size: 11, weight: FontWeight.w500, letterSpacing: 0.5, color: cs.onSurfaceVariant),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: context.w(12)),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(context.w(16)),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppTheme.mdRadius),
@@ -389,16 +372,12 @@ class HomeScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.stars_outlined,
-                      color: const Color(0xFF7B61FF), size: 22),
+                      color: const Color(0xFF7B61FF), size: context.f(22)),
                   const Spacer(),
                   Text(
                     'Puan',
-                    style: GoogleFonts.publicSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
-                      color: cs.onSurfaceVariant,
-                    ),
+                    style: AppTheme.publicSans(context,
+                      size: 11, weight: FontWeight.w500, letterSpacing: 0.5, color: cs.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -414,12 +393,8 @@ class HomeScreen extends ConsumerWidget {
 
     return Text(
       title,
-      style: GoogleFonts.notoSerif(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        height: 1.3,
-        color: cs.onSurface,
-      ),
+      style: AppTheme.notoSerif(context,
+        size: 20, weight: FontWeight.w600, height: 1.3, color: cs.onSurface),
     );
   }
 
@@ -439,7 +414,7 @@ class HomeScreen extends ConsumerWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.mdRadius),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(context.w(16)),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(AppTheme.mdRadius),
@@ -448,41 +423,34 @@ class HomeScreen extends ConsumerWidget {
           child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: context.w(48),
+                height: context.w(48),
                 decoration: BoxDecoration(
                   color: iconBgColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(context.w(14)),
                 ),
-                child: Icon(icon, color: iconBgColor, size: 24),
+                child: Icon(icon, color: iconBgColor, size: context.f(24)),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: context.w(14)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        height: 1.3,
-                        color: cs.onSurface,
-                      ),
+                      style: AppTheme.inter(context,
+                        size: 15, weight: FontWeight.w600, height: 1.3, color: cs.onSurface),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: context.h(2)),
                     Text(
                       subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: cs.onSurfaceVariant,
-                      ),
+                      style: AppTheme.inter(context,
+                        size: 13, height: 1.4, color: cs.onSurfaceVariant),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: cs.outline, size: 20),
+              Icon(Icons.chevron_right, color: cs.outline, size: context.f(20)),
             ],
           ),
         ),

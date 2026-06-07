@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/screen_utils.dart';
 import '../../providers/donor_provider.dart';
 
 class DonorDetailScreen extends ConsumerWidget {
@@ -18,21 +19,17 @@ class DonorDetailScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Hata: $e')),
         data: (donor) {
           return Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(context.w(24)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (donor.name != null)
-                  _infoRow('Ad', donor.name!),
-                _infoRow('Profil ID', donor.profileId ?? '-'),
-                _infoRow(
-                  'Durum',
-                  donor.isVerified == true ? 'Doğrulanmış' : 'Doğrulanmamış',
-                ),
-                _infoRow(
-                  'Oluşturulma',
-                  donor.createdAt?.toString() ?? '-',
-                ),
+                  _infoRow(context, 'Ad', donor.name!),
+                _infoRow(context, 'Profil ID', donor.profileId ?? '-'),
+                _infoRow(context, 'Durum',
+                    donor.isVerified == true ? 'Doğrulanmış' : 'Doğrulanmamış'),
+                _infoRow(context, 'Oluşturulma',
+                    donor.createdAt?.toString() ?? '-'),
               ],
             ),
           );
@@ -41,14 +38,14 @@ class DonorDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(BuildContext context, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: context.h(8)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: context.w(120),
             child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
           Expanded(child: Text(value)),

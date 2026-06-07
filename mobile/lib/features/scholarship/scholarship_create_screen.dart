@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/screen_utils.dart';
 import '../../models/create_scholarship_request.dart';
 import '../../models/income_level.dart';
 import '../../models/user_role.dart';
@@ -92,6 +93,96 @@ class _ScholarshipCreateScreenState
     super.dispose();
   }
 
+  Future<void> _showMultiSelectDialog({
+    required String title,
+    required List<String> allItems,
+    required List<String> currentSelection,
+    required void Function(List<String>) onDone,
+  }) async {
+    final searchController = TextEditingController();
+    final selected = List<String>.from(currentSelection);
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        var searchQuery = '';
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final filtered = searchQuery.isEmpty
+                ? allItems
+                : allItems
+                    .where((i) =>
+                        i.toLowerCase().contains(searchQuery.toLowerCase()))
+                    .toList();
+            return AlertDialog(
+              title: Text(title),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Ara...',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (v) {
+                        searchQuery = v;
+                        setDialogState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Flexible(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: filtered.map((item) {
+                          final isSelected = selected.contains(item);
+                          return CheckboxListTile(
+                            title: Text(item),
+                            value: isSelected,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (_) {
+                              setDialogState(() {
+                                if (isSelected) {
+                                  selected.remove(item);
+                                } else {
+                                  selected.add(item);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    searchController.dispose();
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('İptal'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    searchController.dispose();
+                    onDone(selected);
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Tamam'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -102,27 +193,27 @@ class _ScholarshipCreateScreenState
       final request = CreateScholarshipRequest(
         donorId: donorId,
         title: _titleController.text.trim(),
-        quota: int.tryParse(_quotaController.text),
+        quota: int.tryParse(_quotaController.text) ?? 1,
         isActive: _isActive,
-        minGpa: double.tryParse(_minGpaController.text),
+        minGpa: double.tryParse(_minGpaController.text) ?? 0.0,
         targetCities:
-            _selectedCities.isEmpty ? null : _selectedCities,
+            _selectedCities.isEmpty ? <String>[] : _selectedCities,
         targetDepartments:
-            _selectedDepartments.isEmpty ? null : _selectedDepartments,
+            _selectedDepartments.isEmpty ? <String>[] : _selectedDepartments,
         targetIncomeLevels:
-            _selectedIncomeLevels.isEmpty ? null : _selectedIncomeLevels,
-        amountPerYear: double.tryParse(_amountController.text),
-        durationMonths: int.tryParse(_durationController.text),
-        scholarshipType: _scholarshipType,
+            _selectedIncomeLevels.isEmpty ? <IncomeLevel>[] : _selectedIncomeLevels,
+        amountPerYear: double.tryParse(_amountController.text) ?? 0.0,
+        durationMonths: int.tryParse(_durationController.text) ?? 12,
+        scholarshipType: _scholarshipType ?? 'full_tuition',
         preferredGender: _preferredGender,
-        requiresEssay: _requiresEssay ? true : null,
-        requiresInterview: _requiresInterview ? true : null,
-        acceptsDisability: _acceptsDisability ? true : null,
-        acceptsOrphan: _acceptsOrphan ? true : null,
-        acceptsRefugee: _acceptsRefugee ? true : null,
-        maxSemester: int.tryParse(_maxSemesterController.text),
-        minExtracurricularScore: int.tryParse(_minExtracurricularController.text),
-        maxHouseholdIncome: double.tryParse(_maxHouseholdIncomeController.text),
+        requiresEssay: _requiresEssay,
+        requiresInterview: _requiresInterview,
+        acceptsDisability: _acceptsDisability,
+        acceptsOrphan: _acceptsOrphan,
+        acceptsRefugee: _acceptsRefugee,
+        maxSemester: int.tryParse(_maxSemesterController.text) ?? 0,
+        minExtracurricularScore: int.tryParse(_minExtracurricularController.text) ?? 0,
+        maxHouseholdIncome: double.tryParse(_maxHouseholdIncomeController.text) ?? 0.0,
       );
 
       await ref.read(scholarshipServiceProvider).create(request);
@@ -150,7 +241,7 @@ class _ScholarshipCreateScreenState
     return Scaffold(
       appBar: AppBar(title: const Text('Yeni Burs')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(context.w(24)),
         child: Form(
           key: _formKey,
           child: Column(
@@ -162,7 +253,7 @@ class _ScholarshipCreateScreenState
                 validator: (v) =>
                     v != null && v.isNotEmpty ? null : 'Burs adı gerekli',
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.h(16)),
               TextFormField(
                 controller: _amountController,
                 decoration: const InputDecoration(
@@ -170,29 +261,53 @@ class _ScholarshipCreateScreenState
                   prefixText: '₺ ',
                 ),
                 keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Burs miktarı gerekli';
+                  final n = double.tryParse(v);
+                  if (n == null || n <= 0) return 'Geçerli bir miktar girin';
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.h(16)),
               TextFormField(
                 controller: _durationController,
                 decoration: const InputDecoration(labelText: 'Süre (ay)'),
                 keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Süre gerekli';
+                  final n = int.tryParse(v);
+                  if (n == null || n <= 0) return 'Geçerli bir süre girin';
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.h(16)),
               TextFormField(
                 controller: _quotaController,
                 decoration: const InputDecoration(labelText: 'Kota'),
                 keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Kota gerekli';
+                  final n = int.tryParse(v);
+                  if (n == null || n <= 0) return 'Geçerli bir kota girin';
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.h(16)),
               TextFormField(
                 controller: _minGpaController,
                 decoration: const InputDecoration(labelText: 'Min GPA'),
                 keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Min GPA gerekli';
+                  final n = double.tryParse(v);
+                  if (n == null || n < 0 || n > 4) return '0-4 arası girin';
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.h(16)),
               DropdownButtonFormField<String>(
                 initialValue: _scholarshipType,
-                decoration: const InputDecoration(labelText: 'Burs Türü'),
+                decoration: const InputDecoration(labelText: 'Burs Türü *'),
                 items: _scholarshipTypes
                     .map((t) => DropdownMenuItem(
                           value: t,
@@ -200,8 +315,9 @@ class _ScholarshipCreateScreenState
                         ))
                     .toList(),
                 onChanged: (v) => setState(() => _scholarshipType = v),
+                validator: (v) => v == null ? 'Burs türü seçin' : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.h(16)),
               DropdownButtonFormField<String>(
                 initialValue: _preferredGender,
                 decoration: const InputDecoration(labelText: 'Cinsiyet Tercihi'),
@@ -215,7 +331,7 @@ class _ScholarshipCreateScreenState
                 ],
                 onChanged: (v) => setState(() => _preferredGender = v),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.h(16)),
               TextFormField(
                 controller: _maxHouseholdIncomeController,
                 decoration: const InputDecoration(
@@ -223,22 +339,40 @@ class _ScholarshipCreateScreenState
                   prefixText: '₺ ',
                 ),
                 keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Aile geliri gerekli';
+                  final n = double.tryParse(v);
+                  if (n == null || n < 0) return 'Geçerli bir gelir girin';
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.h(16)),
               TextFormField(
                 controller: _maxSemesterController,
                 decoration: const InputDecoration(labelText: 'Maksimum Dönem'),
                 keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Dönem gerekli';
+                  final n = int.tryParse(v);
+                  if (n == null || n < 0) return 'Geçerli bir dönem girin';
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.h(16)),
               TextFormField(
                 controller: _minExtracurricularController,
                 decoration: const InputDecoration(
                   labelText: 'Min. Sosyal Aktivite Puanı',
                 ),
                 keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Puan gerekli';
+                  final n = int.tryParse(v);
+                  if (n == null || n < 0) return 'Geçerli bir puan girin';
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.h(16)),
               SwitchListTile(
                 title: const Text('Aktif'),
                 value: _isActive,
@@ -269,73 +403,135 @@ class _ScholarshipCreateScreenState
                 value: _acceptsRefugee,
                 onChanged: (v) => setState(() => _acceptsRefugee = v),
               ),
-              const SizedBox(height: 16),
-              const Text('Hedef Şehirler (opsiyonel):'),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: _cities
-                    .map((c) => FilterChip(
-                          label: Text(c),
-                          selected: _selectedCities.contains(c),
-                          onSelected: (sel) {
-                            setState(() {
-                              if (sel) {
-                                _selectedCities.add(c);
-                              } else {
-                                _selectedCities.remove(c);
-                              }
-                            });
-                          },
-                        ))
-                    .toList(),
+              InkWell(
+                onTap: () => _showMultiSelectDialog(
+                  title: 'Hedef Şehirler',
+                  allItems: _cities,
+                  currentSelection: _selectedCities,
+                  onDone: (v) => setState(() => _selectedCities
+                    ..clear()
+                    ..addAll(v)),
+                ),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Hedef Şehirler',
+                    suffixIcon: Icon(Icons.search),
+                  ),
+                  child: _selectedCities.isEmpty
+                      ? const Text('Tüm şehirler',
+                          style: TextStyle(color: Colors.grey))
+                      : Text('${_selectedCities.length} şehir seçildi'),
+                ),
               ),
-              const SizedBox(height: 16),
-              const Text('Hedef Bölümler (opsiyonel):'),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: _departments
-                    .map((d) => FilterChip(
-                          label: Text(d),
-                          selected: _selectedDepartments.contains(d),
-                          onSelected: (sel) {
-                            setState(() {
-                              if (sel) {
-                                _selectedDepartments.add(d);
-                              } else {
-                                _selectedDepartments.remove(d);
-                              }
-                            });
-                          },
-                        ))
-                    .toList(),
+              if (_selectedCities.isNotEmpty) ...[
+                SizedBox(height: context.h(4)),
+                Wrap(
+                  spacing: context.w(4),
+                  runSpacing: context.h(4),
+                  children: _selectedCities
+                      .map((c) => Chip(
+                            label: Text(c,
+                                style: const TextStyle(fontSize: 12)),
+                            deleteIcon: const Icon(Icons.close, size: 16),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            onDeleted: () =>
+                                setState(() => _selectedCities.remove(c)),
+                          ))
+                      .toList(),
+                ),
+              ],
+              SizedBox(height: context.h(16)),
+              InkWell(
+                onTap: () => _showMultiSelectDialog(
+                  title: 'Hedef Bölümler',
+                  allItems: _departments,
+                  currentSelection: _selectedDepartments,
+                  onDone: (v) => setState(() => _selectedDepartments
+                    ..clear()
+                    ..addAll(v)),
+                ),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Hedef Bölümler',
+                    suffixIcon: Icon(Icons.search),
+                  ),
+                  child: _selectedDepartments.isEmpty
+                      ? const Text('Tüm bölümler',
+                          style: TextStyle(color: Colors.grey))
+                      : Text('${_selectedDepartments.length} bölüm seçildi'),
+                ),
               ),
-              const SizedBox(height: 16),
-              const Text('Hedef Gelir Düzeyleri (opsiyonel):'),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: IncomeLevel.values
-                    .map((l) => FilterChip(
-                          label: Text(l.displayName),
-                          selected: _selectedIncomeLevels.contains(l),
-                          onSelected: (sel) {
-                            setState(() {
-                              if (sel) {
-                                _selectedIncomeLevels.add(l);
-                              } else {
-                                _selectedIncomeLevels.remove(l);
-                              }
-                            });
-                          },
-                        ))
-                    .toList(),
+              if (_selectedDepartments.isNotEmpty) ...[
+                SizedBox(height: context.h(4)),
+                Wrap(
+                  spacing: context.w(4),
+                  runSpacing: context.h(4),
+                  children: _selectedDepartments
+                      .map((d) => Chip(
+                            label: Text(d,
+                                style: const TextStyle(fontSize: 12)),
+                            deleteIcon: const Icon(Icons.close, size: 16),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            onDeleted: () => setState(
+                                () => _selectedDepartments.remove(d)),
+                          ))
+                      .toList(),
+                ),
+              ],
+              SizedBox(height: context.h(16)),
+              InkWell(
+                onTap: () => _showMultiSelectDialog(
+                  title: 'Hedef Gelir Düzeyleri',
+                  allItems: IncomeLevel.values
+                      .map((l) => l.displayName)
+                      .toList(),
+                  currentSelection:
+                      _selectedIncomeLevels.map((l) => l.displayName).toList(),
+                  onDone: (v) => setState(() {
+                    final map = <String, IncomeLevel>{
+                      for (final l in IncomeLevel.values) l.displayName: l,
+                    };
+                    _selectedIncomeLevels
+                      ..clear()
+                      ..addAll(v.map((n) => map[n]).whereType<IncomeLevel>().toList());
+                  }),
+                ),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Hedef Gelir Düzeyleri',
+                    suffixIcon: Icon(Icons.search),
+                  ),
+                  child: _selectedIncomeLevels.isEmpty
+                      ? const Text('Tüm gelir düzeyleri',
+                          style: TextStyle(color: Colors.grey))
+                      : Text(
+                          '${_selectedIncomeLevels.length} gelir düzeyi seçildi'),
+                ),
               ),
-              const SizedBox(height: 24),
+              if (_selectedIncomeLevels.isNotEmpty) ...[
+                SizedBox(height: context.h(4)),
+                Wrap(
+                  spacing: context.w(4),
+                  runSpacing: context.h(4),
+                  children: _selectedIncomeLevels
+                      .map((l) => Chip(
+                            label: Text(l.displayName,
+                                style: const TextStyle(fontSize: 12)),
+                            deleteIcon: const Icon(Icons.close, size: 16),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            onDeleted: () => setState(
+                                () => _selectedIncomeLevels.remove(l)),
+                          ))
+                      .toList(),
+                ),
+              ],
+              SizedBox(height: context.h(24)),
               ElevatedButton(
                 onPressed: _submit,
                 child: const Text('Oluştur'),

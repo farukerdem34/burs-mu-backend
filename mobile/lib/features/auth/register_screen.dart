@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
+import '../../core/screen_utils.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/reference_service.dart';
 import '../../models/register_request.dart';
@@ -226,11 +226,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       appBar: AppBar(
         title: Text(
           'Kayıt Ol',
-          style: GoogleFonts.inter(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: cs.onSurface,
-          ),
+          style: AppTheme.inter(context, size: 18, weight: FontWeight.w600, color: cs.onSurface),
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: cs.onSurface),
@@ -247,10 +243,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
         ),
         child: Column(
           children: [
-            _buildStepIndicator(cs),
+            _buildStepIndicator(cs, context),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                padding: EdgeInsets.fromLTRB(context.w(20), context.h(12), context.w(20), context.h(32)),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -258,7 +254,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     children: [
                       SlideTransition(
                         position: _slideAnimation,
-                        child: _buildCurrentStep(cs),
+                        child: _buildCurrentStep(cs, context),
                       ),
                     ],
                   ),
@@ -271,12 +267,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     );
   }
 
-  Widget _buildStepIndicator(ColorScheme cs) {
+  Widget _buildStepIndicator(ColorScheme cs, BuildContext context) {
     final steps = _stepLabels;
     final icons = _stepIcons;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: EdgeInsets.fromLTRB(context.w(20), context.h(16), context.w(20), 0),
       child: Column(
         children: [
           Row(
@@ -286,7 +282,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 final isPast = stepIdx < _currentStep;
                 return Expanded(
                   child: Container(
-                    height: 2,
+                    height: context.h(2),
                     color: isPast
                         ? cs.primary
                         : cs.outlineVariant.withAlpha(80),
@@ -297,22 +293,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               final isActive = stepIdx == _currentStep;
               final isPast = stepIdx < _currentStep;
               return Container(
-                width: 32,
-                height: 32,
+                width: context.w(32),
+                height: context.w(32),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isPast || isActive ? cs.primary : Colors.transparent,
                   border: Border.all(
                     color: isPast || isActive ? cs.primary : cs.outlineVariant,
-                    width: 2,
+                    width: context.w(2),
                   ),
                 ),
                 child: Center(
                   child: isPast
-                      ? Icon(Icons.check, size: 16, color: cs.onPrimary)
+                      ? Icon(Icons.check, size: context.f(16), color: cs.onPrimary)
                       : Icon(
                           icons[stepIdx],
-                          size: 16,
+                          size: context.f(16),
                           color: isActive
                               ? cs.onPrimary
                               : cs.onSurfaceVariant,
@@ -321,7 +317,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               );
             }),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: context.h(8)),
           Row(
             children: List.generate(steps.length * 2 - 1, (i) {
               if (i.isOdd) return const Expanded(child: SizedBox());
@@ -330,7 +326,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               return Expanded(
                 child: Icon(
                   icons[stepIdx],
-                  size: 18,
+                  size: context.f(18),
                   color: isActive ? cs.primary : cs.onSurfaceVariant,
                 ),
               );
@@ -341,49 +337,44 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     );
   }
 
-  Widget _buildCurrentStep(ColorScheme cs) {
+  Widget _buildCurrentStep(ColorScheme cs, BuildContext context) {
     if (_role == UserRole.student) {
       switch (_currentStep) {
         case 0:
-          return _buildAccountStep(cs);
+          return _buildAccountStep(cs, context);
         case 1:
-          return _buildStudentProfileStep(cs);
+          return _buildStudentProfileStep(cs, context);
         case 2:
-          return _buildAcademicStep(cs);
+          return _buildAcademicStep(cs, context);
         case 3:
-          return _buildFamilyStep(cs);
+          return _buildFamilyStep(cs, context);
         case 4:
-          return _buildReviewStep(cs);
+          return _buildReviewStep(cs, context);
       }
     } else {
       switch (_currentStep) {
         case 0:
-          return _buildAccountStep(cs);
+          return _buildAccountStep(cs, context);
         case 1:
-          return _buildReviewStep(cs);
+          return _buildReviewStep(cs, context);
       }
     }
-    return _buildAccountStep(cs);
+    return _buildAccountStep(cs, context);
   }
 
-  Widget _buildSectionTitle(String title, ColorScheme cs) {
+  Widget _buildSectionTitle(String title, ColorScheme cs, BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: context.h(16)),
       child: Text(
         title,
-        style: GoogleFonts.notoSerif(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          height: 1.3,
-          color: cs.onSurface,
-        ),
+        style: AppTheme.notoSerif(context, size: 20, weight: FontWeight.w600, height: 1.3, color: cs.onSurface),
       ),
     );
   }
 
-  Widget _sectionCard({required Widget child}) {
+  Widget _sectionCard({required Widget child, required BuildContext context}) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(context.w(24)),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(230),
         borderRadius: BorderRadius.circular(AppTheme.lgRadius),
@@ -394,6 +385,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   }
 
   Widget _navButtons({
+    required BuildContext context,
     required bool showPrev,
     required VoidCallback? onNext,
     String nextLabel = 'Devam Et',
@@ -406,7 +398,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             child: OutlinedButton(
               onPressed: _prevStep,
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 52),
+                minimumSize: Size(0, context.h(52)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.smRadius),
                 ),
@@ -414,11 +406,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               child: const Text('Geri'),
             ),
           ),
-        if (showPrev) const SizedBox(width: 12),
+        if (showPrev) SizedBox(width: context.w(12)),
         Expanded(
           flex: showPrev ? 2 : 1,
           child: SizedBox(
-            height: 52,
+            height: context.h(52),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppTheme.smRadius),
@@ -426,8 +418,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 boxShadow: [
                   BoxShadow(
                     color: AppTheme.primaryBlue.withAlpha(60),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+                    blurRadius: context.w(16),
+                    offset: Offset(0, context.h(4)),
                   ),
                 ],
               ),
@@ -444,8 +436,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(nextLabel),
-                    const SizedBox(width: 8),
-                    Icon(nextIcon, size: 18),
+                    SizedBox(width: context.w(8)),
+                    Icon(nextIcon, size: context.f(18)),
                   ],
                 ),
               ),
@@ -456,12 +448,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     );
   }
 
-  Widget _buildAccountStep(ColorScheme cs) {
+  Widget _buildAccountStep(ColorScheme cs, BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionTitle('Hesap Bilgileri', cs),
+        _buildSectionTitle('Hesap Bilgileri', cs, context),
         _sectionCard(
+          context: context,
           child: Column(
             children: [
               TextFormField(
@@ -474,7 +467,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 textInputAction: TextInputAction.next,
                 validator: _validateEmail,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: context.h(20)),
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(
@@ -486,7 +479,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 validator: _validatePassword,
               ),
               if (_role == UserRole.donor) ...[
-                const SizedBox(height: 20),
+                SizedBox(height: context.h(20)),
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -496,7 +489,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   textInputAction: TextInputAction.next,
                 ),
               ],
-              const SizedBox(height: 20),
+              SizedBox(height: context.h(20)),
               DropdownButtonFormField<UserRole>(
                 initialValue: _role,
                 decoration: const InputDecoration(
@@ -520,32 +513,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        _navButtons(showPrev: false, onNext: _nextStep),
+        SizedBox(height: context.h(24)),
+        _navButtons(context: context, showPrev: false, onNext: _nextStep),
       ],
     );
   }
 
-  Widget _buildStudentProfileStep(ColorScheme cs) {
+  Widget _buildStudentProfileStep(ColorScheme cs, BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionTitle('Öğrenci Profili', cs),
+        _buildSectionTitle('Öğrenci Profili', cs, context),
         _sectionCard(
+          context: context,
           child: _isLoadingRefs
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Center(child: CircularProgressIndicator()),
+              ? Padding(
+                  padding: EdgeInsets.symmetric(vertical: context.h(32)),
+                  child: const Center(child: CircularProgressIndicator()),
                 )
               : _refsError != null
                   ? Column(
                       children: [
-                        Icon(Icons.cloud_off, size: 40, color: cs.error),
-                        const SizedBox(height: 12),
+                        Icon(Icons.cloud_off, size: context.f(40), color: cs.error),
+                        SizedBox(height: context.h(12)),
                         Text(_refsError!,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: cs.error, fontSize: 13)),
-                        const SizedBox(height: 12),
+                            style: TextStyle(color: cs.error, fontSize: context.f(13))),
+                        SizedBox(height: context.h(12)),
                         TextButton.icon(
                           onPressed: _loadReferences,
                           icon: const Icon(Icons.refresh, size: 18),
@@ -568,7 +562,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                           onChanged: (v) => setState(() => _selectedCity = v),
                           validator: (v) => v == null ? 'Şehir seçin' : null,
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: context.h(20)),
                         DropdownButtonFormField<String>(
                           initialValue: _selectedDepartment,
                           decoration: const InputDecoration(
@@ -585,7 +579,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                           validator: (v) =>
                               v == null ? 'Bölüm seçin' : null,
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: context.h(20)),
                         DropdownButtonFormField<IncomeLevel>(
                           initialValue: _incomeStatus,
                           decoration: const InputDecoration(
@@ -606,18 +600,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                       ],
                     ),
         ),
-        const SizedBox(height: 24),
-        _navButtons(showPrev: true, onNext: _nextStep),
+        SizedBox(height: context.h(24)),
+        _navButtons(context: context, showPrev: true, onNext: _nextStep),
       ],
     );
   }
 
-  Widget _buildAcademicStep(ColorScheme cs) {
+  Widget _buildAcademicStep(ColorScheme cs, BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionTitle('Akademik Bilgiler', cs),
+        _buildSectionTitle('Akademik Bilgiler', cs, context),
         _sectionCard(
+          context: context,
           child: Column(
             children: [
               TextFormField(
@@ -631,7 +626,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.next,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: context.h(20)),
               DropdownButtonFormField<int>(
                 initialValue: _semester,
                 decoration: const InputDecoration(
@@ -653,7 +648,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 }).toList(),
                 onChanged: (v) => setState(() => _semester = v),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: context.h(20)),
               DropdownButtonFormField<AcademicStanding>(
                 initialValue: _academicStanding,
                 decoration: const InputDecoration(
@@ -666,7 +661,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     .toList(),
                 onChanged: (v) => setState(() => _academicStanding = v),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: context.h(20)),
               DropdownButtonFormField<int>(
                 initialValue: _extracurricularScore,
                 decoration: const InputDecoration(
@@ -681,18 +676,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        _navButtons(showPrev: true, onNext: _nextStep),
+        SizedBox(height: context.h(24)),
+        _navButtons(context: context, showPrev: true, onNext: _nextStep),
       ],
     );
   }
 
-  Widget _buildFamilyStep(ColorScheme cs) {
+  Widget _buildFamilyStep(ColorScheme cs, BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionTitle('Aile ve Kişisel Bilgiler', cs),
+        _buildSectionTitle('Aile ve Kişisel Bilgiler', cs, context),
         _sectionCard(
+          context: context,
           child: Column(
             children: [
               TextFormField(
@@ -705,7 +701,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.next,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: context.h(20)),
               TextFormField(
                 controller: _householdSizeController,
                 decoration: const InputDecoration(
@@ -715,7 +711,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: context.h(20)),
               TextFormField(
                 controller: _numSiblingsController,
                 decoration: const InputDecoration(
@@ -725,7 +721,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: context.h(20)),
               SwitchListTile(
                 title: const Text('Engel Durumu'),
                 subtitle: const Text('Bir engeliniz var mı?'),
@@ -747,13 +743,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        _navButtons(showPrev: true, onNext: _nextStep),
+        SizedBox(height: context.h(24)),
+        _navButtons(context: context, showPrev: true, onNext: _nextStep),
       ],
     );
   }
 
-  Widget _buildReviewStep(ColorScheme cs) {
+  Widget _buildReviewStep(ColorScheme cs, BuildContext context) {
     final authState = ref.watch(authProvider);
 
     String displayValue(String? val) => (val != null && val.isNotEmpty) ? val : '-';
@@ -761,86 +757,87 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionTitle('Bilgilerinizi Onaylayın', cs),
+        _buildSectionTitle('Bilgilerinizi Onaylayın', cs, context),
         _sectionCard(
+          context: context,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildInfoRow('E-posta', _emailController.text, cs),
-              const SizedBox(height: 16),
-              _buildInfoRow('Rol', _role.displayName, cs),
+              _buildInfoRow(context, 'E-posta', _emailController.text, cs),
+              SizedBox(height: context.h(16)),
+              _buildInfoRow(context, 'Rol', _role.displayName, cs),
               if (_role == UserRole.donor) ...[
                 const Divider(height: 24),
-                _buildInfoRow('Ad', displayValue(_nameController.text), cs),
+                _buildInfoRow(context, 'Ad', displayValue(_nameController.text), cs),
               ],
               if (_role == UserRole.student) ...[
                 const Divider(height: 24),
-                _buildInfoRow('Şehir', displayValue(_selectedCity), cs),
-                const SizedBox(height: 16),
-                _buildInfoRow('Bölüm', displayValue(_selectedDepartment), cs),
-                const SizedBox(height: 16),
-                _buildInfoRow('Gelir Düzeyi',
+                _buildInfoRow(context, 'Şehir', displayValue(_selectedCity), cs),
+                SizedBox(height: context.h(16)),
+                _buildInfoRow(context, 'Bölüm', displayValue(_selectedDepartment), cs),
+                SizedBox(height: context.h(16)),
+                _buildInfoRow(context, 'Gelir Düzeyi',
                     _incomeStatus?.displayName ?? '-', cs),
                 const Divider(height: 24),
-                _buildInfoRow('GPA',
+                _buildInfoRow(context, 'GPA',
                     _gpaController.text.isNotEmpty ? _gpaController.text : '-',
                     cs),
-                const SizedBox(height: 16),
-                _buildInfoRow('Dönem', _semester?.toString() ?? '-', cs),
-                const SizedBox(height: 16),
-                _buildInfoRow('Akademik Durum',
+                SizedBox(height: context.h(16)),
+                _buildInfoRow(context, 'Dönem', _semester?.toString() ?? '-', cs),
+                SizedBox(height: context.h(16)),
+                _buildInfoRow(context, 'Akademik Durum',
                     _academicStanding?.displayName ?? '-', cs),
-                const SizedBox(height: 16),
-                _buildInfoRow(
+                SizedBox(height: context.h(16)),
+                _buildInfoRow(context,
                     'Ekstraküler Puan',
                     _extracurricularScore?.toString() ?? '-',
                     cs),
                 const Divider(height: 24),
-                _buildInfoRow('Aile Geliri',
+                _buildInfoRow(context, 'Aile Geliri',
                     _familyIncomeController.text.isNotEmpty
                         ? '${_familyIncomeController.text} TL'
                         : '-',
                     cs),
-                const SizedBox(height: 16),
-                _buildInfoRow('Hane Halkı',
+                SizedBox(height: context.h(16)),
+                _buildInfoRow(context, 'Hane Halkı',
                     _householdSizeController.text.isNotEmpty
                         ? _householdSizeController.text
                         : '-',
                     cs),
-                const SizedBox(height: 16),
-                _buildInfoRow('Eğitimdeki Kardeş',
+                SizedBox(height: context.h(16)),
+                _buildInfoRow(context, 'Eğitimdeki Kardeş',
                     _numSiblingsController.text.isNotEmpty
                         ? _numSiblingsController.text
                         : '-',
                     cs),
-                const SizedBox(height: 16),
-                _buildInfoRow('Engel Durumu', _hasDisability ? 'Var' : 'Yok', cs),
-                const SizedBox(height: 16),
-                _buildInfoRow('Yetim', _isOrphan ? 'Evet' : 'Hayır', cs),
-                const SizedBox(height: 16),
-                _buildInfoRow('Mülteci', _isRefugee ? 'Evet' : 'Hayır', cs),
+                SizedBox(height: context.h(16)),
+                _buildInfoRow(context, 'Engel Durumu', _hasDisability ? 'Var' : 'Yok', cs),
+                SizedBox(height: context.h(16)),
+                _buildInfoRow(context, 'Yetim', _isOrphan ? 'Evet' : 'Hayır', cs),
+                SizedBox(height: context.h(16)),
+                _buildInfoRow(context, 'Mülteci', _isRefugee ? 'Evet' : 'Hayır', cs),
               ],
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: context.h(24)),
         if (authState.error != null)
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: EdgeInsets.only(bottom: context.h(16)),
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(context.w(12)),
               decoration: BoxDecoration(
                 color: cs.error.withAlpha(12),
                 borderRadius: BorderRadius.circular(AppTheme.smRadius),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: cs.error, size: 18),
-                  const SizedBox(width: 8),
+                  Icon(Icons.error_outline, color: cs.error, size: context.f(18)),
+                  SizedBox(width: context.w(8)),
                   Flexible(
                     child: Text(
                       authState.error!,
-                      style: TextStyle(color: cs.error, fontSize: 13),
+                      style: TextStyle(color: cs.error, fontSize: context.f(13)),
                     ),
                   ),
                 ],
@@ -848,28 +845,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             ),
           ),
         _navButtons(
+          context: context,
           showPrev: true,
           onNext: authState.status == AuthStatus.loading ? null : _submit,
           nextLabel: 'Kayıt Ol',
           nextIcon: Icons.check_circle_outline,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: context.h(16)),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               'Zaten hesabın var mı?',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: cs.onSurfaceVariant,
-              ),
+              style: AppTheme.inter(context, size: 14, color: cs.onSurfaceVariant),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: context.w(4)),
             TextButton(
               onPressed: () => context.go('/login'),
               style: TextButton.styleFrom(
                 foregroundColor: cs.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: EdgeInsets.symmetric(horizontal: context.w(8)),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -881,30 +876,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     );
   }
 
-  Widget _buildInfoRow(String label, String value, ColorScheme cs) {
+  Widget _buildInfoRow(BuildContext context, String label, String value, ColorScheme cs) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 130,
+          width: context.w(130),
           child: Text(
             label,
-            style: GoogleFonts.publicSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-              color: cs.onSurfaceVariant,
-            ),
+            style: AppTheme.publicSans(context, size: 12, weight: FontWeight.w500, letterSpacing: 0.5, color: cs.onSurfaceVariant),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: cs.onSurface,
-            ),
+            style: AppTheme.inter(context, size: 14, weight: FontWeight.w500, color: cs.onSurface),
           ),
         ),
       ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'screen_utils.dart';
 
 class AppTheme {
   static const Color primaryBlue = Color(0xFF094CB2);
@@ -53,6 +54,48 @@ class AppTheme {
   }) {
     return GoogleFonts.publicSans(
       fontSize: size,
+      fontWeight: weight,
+      letterSpacing: letterSpacing,
+      color: color,
+    );
+  }
+
+  static TextStyle notoSerif(BuildContext context, {
+    double size = 16,
+    FontWeight? weight,
+    double? height,
+    Color? color,
+  }) {
+    return GoogleFonts.notoSerif(
+      fontSize: ScreenUtils.f(size, context),
+      fontWeight: weight,
+      height: height,
+      color: color,
+    );
+  }
+
+  static TextStyle inter(BuildContext context, {
+    double size = 16,
+    FontWeight? weight,
+    double? height,
+    Color? color,
+  }) {
+    return GoogleFonts.inter(
+      fontSize: ScreenUtils.f(size, context),
+      fontWeight: weight,
+      height: height,
+      color: color,
+    );
+  }
+
+  static TextStyle publicSans(BuildContext context, {
+    double size = 16,
+    FontWeight? weight,
+    double? letterSpacing,
+    Color? color,
+  }) {
+    return GoogleFonts.publicSans(
+      fontSize: ScreenUtils.f(size, context),
       fontWeight: weight,
       letterSpacing: letterSpacing,
       color: color,

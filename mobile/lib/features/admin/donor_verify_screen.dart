@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/screen_utils.dart';
 import '../../providers/donor_provider.dart';
 import '../../widgets/stacked_notification.dart';
 
@@ -59,7 +60,7 @@ class DonorVerifyScreen extends ConsumerWidget {
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(horizontal: context.w(16), vertical: context.h(8)),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),

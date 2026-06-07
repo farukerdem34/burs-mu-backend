@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/screen_utils.dart';
 import '../../providers/scholarship_provider.dart';
 
 class ScholarshipDetailScreen extends ConsumerWidget {
@@ -18,7 +19,7 @@ class ScholarshipDetailScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Hata: $e')),
         data: (scholarship) {
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(context.w(24)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -26,46 +27,46 @@ class ScholarshipDetailScreen extends ConsumerWidget {
                   scholarship.title ?? 'Başlıksız',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                const SizedBox(height: 16),
-                _infoRow('Durum',
+                SizedBox(height: context.h(16)),
+                _infoRow(context, 'Durum',
                     scholarship.isActive == true ? 'Aktif' : 'Pasif'),
-                _infoRow('Kota', scholarship.quota?.toString() ?? '-'),
-                _infoRow('Min GPA',
+                _infoRow(context, 'Kota', scholarship.quota?.toString() ?? '-'),
+                _infoRow(context, 'Min GPA',
                     scholarship.minGpa?.toStringAsFixed(2) ?? 'Yok'),
-                const SizedBox(height: 16),
+                SizedBox(height: context.h(16)),
                 const Text('Hedef Şehirler:'),
-                const SizedBox(height: 4),
+                SizedBox(height: context.h(4)),
                 scholarship.targetCities != null &&
                         scholarship.targetCities!.isNotEmpty
                     ? Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
+                        spacing: context.w(8),
+                        runSpacing: context.h(4),
                         children: scholarship.targetCities!
                             .map((c) => Chip(label: Text(c)))
                             .toList(),
                       )
                     : const Text('Yok'),
-                const SizedBox(height: 16),
+                SizedBox(height: context.h(16)),
                 const Text('Hedef Bölümler:'),
-                const SizedBox(height: 4),
+                SizedBox(height: context.h(4)),
                 scholarship.targetDepartments != null &&
                         scholarship.targetDepartments!.isNotEmpty
                     ? Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
+                        spacing: context.w(8),
+                        runSpacing: context.h(4),
                         children: scholarship.targetDepartments!
                             .map((d) => Chip(label: Text(d)))
                             .toList(),
                       )
                     : const Text('Yok'),
-                const SizedBox(height: 16),
+                SizedBox(height: context.h(16)),
                 const Text('Hedef Gelir Düzeyleri:'),
-                const SizedBox(height: 4),
+                SizedBox(height: context.h(4)),
                 scholarship.targetIncomeLevels != null &&
                         scholarship.targetIncomeLevels!.isNotEmpty
                     ? Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
+                        spacing: context.w(8),
+                        runSpacing: context.h(4),
                         children: scholarship.targetIncomeLevels!
                             .map((l) => Chip(label: Text(l.displayName)))
                             .toList(),
@@ -79,14 +80,14 @@ class ScholarshipDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(BuildContext context, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: context.h(8)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: context.w(120),
             child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
           Expanded(child: Text(value)),

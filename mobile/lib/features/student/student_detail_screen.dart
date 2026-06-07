@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/screen_utils.dart';
 import '../../providers/student_provider.dart';
 import '../../core/secure_storage.dart';
 import 'student_edit_screen.dart';
@@ -26,24 +27,22 @@ class StudentDetailScreen extends ConsumerWidget {
               final isOwner = tokenSnapshot.data == student.profileId;
 
               return Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(context.w(24)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _infoRow('Profil ID', student.profileId ?? '-'),
-                    _infoRow('Şehir', student.city ?? '-'),
-                    _infoRow('Bölüm', student.department ?? '-'),
-                    _infoRow(
-                      'GPA',
+                    _infoRow(context, 'Profil ID', student.profileId ?? '-'),
+                    _infoRow(context, 'Şehir', student.city ?? '-'),
+                    _infoRow(context, 'Bölüm', student.department ?? '-'),
+                    _infoRow(context, 'GPA',
                       student.gpa?.toStringAsFixed(2) ?? '-',
                     ),
-                    _infoRow(
-                      'Gelir Düzeyi',
+                    _infoRow(context, 'Gelir Düzeyi',
                       student.incomeStatus?.displayName ?? '-',
                     ),
                     if (student.about != null && student.about!.isNotEmpty)
                       Padding(
-                        padding: const EdgeInsets.only(top: 16),
+                        padding: EdgeInsets.only(top: context.h(16)),
                         child: Text(
                           'Hakkında: ${student.about}',
                           style: Theme.of(context).textTheme.bodyLarge,
@@ -64,7 +63,7 @@ class StudentDetailScreen extends ConsumerWidget {
                           child: const Text('Düzenle'),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: context.h(12)),
                     ],
                     SizedBox(
                       width: double.infinity,
@@ -89,14 +88,14 @@ class StudentDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(BuildContext context, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: context.h(8)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: context.w(120),
             child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
           Expanded(child: Text(value)),

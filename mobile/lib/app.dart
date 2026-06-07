@@ -118,16 +118,22 @@ class BursApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       routerConfig: _router,
       builder: (context, child) {
-        return Stack(
-          children: [
-            child ?? const SizedBox.shrink(),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: StackedNotificationOverlay(),
-            ),
-          ],
+        final scale = (MediaQuery.of(context).size.width / 430).clamp(0.75, 1.25);
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: Stack(
+            children: [
+              child ?? const SizedBox.shrink(),
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: StackedNotificationOverlay(),
+              ),
+            ],
+          ),
         );
       },
     );

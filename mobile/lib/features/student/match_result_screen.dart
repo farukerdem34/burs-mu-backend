@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/screen_utils.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/match_provider.dart';
 import '../../providers/scholarship_provider.dart';
@@ -41,7 +42,7 @@ class MatchResultScreen extends ConsumerWidget {
           final scholarships = scholarshipsAsync.valueOrNull ?? [];
 
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: EdgeInsets.symmetric(vertical: context.h(8)),
             itemCount: matches.length,
             itemBuilder: (context, index) {
               final match = matches[index];
@@ -82,7 +83,7 @@ class _MatchCard extends StatelessWidget {
     final displayScore = score != null ? score!.round() : null;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      margin: EdgeInsets.symmetric(horizontal: context.w(16), vertical: context.h(5)),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: theme.colorScheme.primaryContainer,
@@ -101,21 +102,21 @@ class _MatchCard extends StatelessWidget {
           children: [
             if (displayScore != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: context.w(10), vertical: context.h(4)),
                 decoration: BoxDecoration(
                   color: _scoreColor(displayScore, theme).withAlpha(25),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(context.w(12)),
                 ),
                 child: Text(
                   '$displayScore',
                   style: TextStyle(
                     color: _scoreColor(displayScore, theme),
                     fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                    fontSize: context.f(13),
                   ),
                 ),
               ),
-            const SizedBox(width: 4),
+            SizedBox(width: context.w(4)),
             Icon(
               Icons.chevron_right,
               color: theme.colorScheme.onSurfaceVariant,
@@ -142,23 +143,23 @@ class _MatchEmpty extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(context.w(32)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.search_off_rounded,
-              size: 72,
+              size: context.f(72),
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: context.h(16)),
             Text(
               'Uygun Burs Bulunamadı',
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: context.h(8)),
             Text(
               'Profilinize uygun burs bulunamadı. '
               'Profil bilgilerinizi güncelleyerek daha fazla bursa erişebilirsiniz.',
@@ -188,23 +189,23 @@ class _MatchError extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(context.w(32)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.cloud_off_rounded,
-              size: 72,
+              size: context.f(72),
               color: theme.colorScheme.error.withValues(alpha: 0.6),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: context.h(16)),
             Text(
               'Bir Hata Oluştu',
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: context.h(8)),
             Text(
               'Eşleşme sonuçları yüklenirken bir sorun oluştu. '
               'Lütfen tekrar deneyin.',
@@ -213,7 +214,7 @@ class _MatchError extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: context.h(24)),
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
@@ -232,7 +233,7 @@ class _MatchSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: context.h(8)),
       itemCount: 5,
       itemBuilder: (_, index) => const _SkeletonCard(),
     );
@@ -246,14 +247,14 @@ class _SkeletonCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      margin: EdgeInsets.symmetric(horizontal: context.w(16), vertical: context.h(5)),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: theme.colorScheme.surfaceContainerHighest,
         ),
         title: Container(
-          height: 15,
-          width: 180,
+          height: context.h(15),
+          width: context.w(180),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(4),

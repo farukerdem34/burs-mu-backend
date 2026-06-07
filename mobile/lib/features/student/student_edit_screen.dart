@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
+import '../../core/screen_utils.dart';
 import '../../models/update_student_request.dart';
 import '../../models/income_level.dart';
 import '../../providers/student_provider.dart';
@@ -114,11 +114,7 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
       appBar: AppBar(
         title: Text(
           'Profili Düzenle',
-          style: GoogleFonts.inter(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: cs.onSurface,
-          ),
+          style: AppTheme.inter(context, size: 18, weight: FontWeight.w600, color: cs.onSurface),
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: cs.onSurface),
@@ -139,16 +135,15 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                padding: EdgeInsets.fromLTRB(context.w(20), context.h(24), context.w(20), context.h(32)),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildSectionTitle('Öğrenci Bilgileri', cs),
-                      const SizedBox(height: 4),
-                      _buildCard(
-                        cs,
+                      _buildSectionTitle('Öğrenci Bilgileri', context, cs),
+                      SizedBox(height: context.h(4)),
+                      _buildCard(cs, context,
                         children: [
                           DropdownButtonFormField<String>(
                             initialValue: _selectedCity,
@@ -164,7 +159,7 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
                             onChanged: (v) =>
                                 setState(() => _selectedCity = v),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: context.h(20)),
                           DropdownButtonFormField<String>(
                             initialValue: _selectedDepartment,
                             decoration: const InputDecoration(
@@ -179,7 +174,7 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
                             onChanged: (v) =>
                                 setState(() => _selectedDepartment = v),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: context.h(20)),
                           DropdownButtonFormField<IncomeLevel>(
                             initialValue: _incomeStatus,
                             decoration: const InputDecoration(
@@ -196,7 +191,7 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
                             onChanged: (v) =>
                                 setState(() => _incomeStatus = v),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: context.h(20)),
                           TextFormField(
                             controller: _gpaController,
                             decoration: const InputDecoration(
@@ -206,7 +201,7 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
                             ),
                             keyboardType: TextInputType.number,
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: context.h(20)),
                           TextFormField(
                             controller: _aboutController,
                             decoration: const InputDecoration(
@@ -219,9 +214,9 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 28),
+                      SizedBox(height: context.h(28)),
                       SizedBox(
-                        height: 52,
+                        height: context.h(52),
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             borderRadius:
@@ -230,8 +225,8 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
                             boxShadow: [
                               BoxShadow(
                                 color: AppTheme.primaryBlue.withAlpha(60),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
+                                blurRadius: context.w(16),
+                                offset: Offset(0, context.h(4)),
                               ),
                             ],
                           ),
@@ -245,22 +240,22 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
                               disabledForegroundColor: Colors.white38,
                             ),
                             child: _isSaving
-                                ? const SizedBox(
-                                    height: 22,
-                                    width: 22,
-                                    child: CircularProgressIndicator(
+                                ? SizedBox(
+                                    height: context.f(22),
+                                    width: context.f(22),
+                                    child: const CircularProgressIndicator(
                                       strokeWidth: 2.5,
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Row(
+                                : Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.center,
                                     children: [
-                                      Text('Değişiklikleri Kaydet'),
-                                      SizedBox(width: 8),
+                                      const Text('Değişiklikleri Kaydet'),
+                                      SizedBox(width: context.w(8)),
                                       Icon(Icons.check_circle_outline,
-                                          size: 20),
+                                          size: context.f(20)),
                                     ],
                                   ),
                           ),
@@ -274,24 +269,19 @@ class _StudentEditScreenState extends ConsumerState<StudentEditScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, ColorScheme cs) {
+  Widget _buildSectionTitle(String title, BuildContext context, ColorScheme cs) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: context.h(16)),
       child: Text(
         title,
-        style: GoogleFonts.notoSerif(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          height: 1.3,
-          color: cs.onSurface,
-        ),
+        style: AppTheme.notoSerif(context, size: 20, weight: FontWeight.w600, height: 1.3, color: cs.onSurface),
       ),
     );
   }
 
-  Widget _buildCard(ColorScheme cs, {required List<Widget> children}) {
+  Widget _buildCard(ColorScheme cs, BuildContext context, {required List<Widget> children}) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(context.w(24)),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(230),
         borderRadius: BorderRadius.circular(AppTheme.lgRadius),

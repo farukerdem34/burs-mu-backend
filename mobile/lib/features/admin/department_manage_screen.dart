@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/screen_utils.dart';
 import '../../services/reference_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/constants.dart';
@@ -144,7 +145,7 @@ class _DepartmentManageScreenState
                   direction: DismissDirection.endToStart,
                   background: Container(
                     alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 24),
+                    padding: EdgeInsets.only(right: context.w(24)),
                     color: Colors.red,
                     child: const Icon(Icons.delete, color: Colors.white),
                   ),

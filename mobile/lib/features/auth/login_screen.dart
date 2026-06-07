@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme.dart';
+import '../../core/screen_utils.dart';
 import '../../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -76,7 +76,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: context.w(24)),
               child: FadeTransition(
                 opacity: _fadeSlide,
                 child: SlideTransition(
@@ -88,9 +88,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildHero(context),
-                      const SizedBox(height: 40),
+                      SizedBox(height: context.h(40)),
                       _buildFormCard(context, authState),
-                      const SizedBox(height: 24),
+                      SizedBox(height: context.h(24)),
                       _buildFooter(context),
                     ],
                   ),
@@ -109,39 +109,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return Column(
       children: [
         Container(
-          width: 80,
-          height: 80,
+          width: context.w(80),
+          height: context.w(80),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(context.w(20)),
             gradient: AppTheme.primaryGradient,
             boxShadow: [
               BoxShadow(
                 color: AppTheme.primaryBlue.withAlpha(50),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                blurRadius: context.w(24),
+                offset: Offset(0, context.h(8)),
               ),
             ],
           ),
-          child: const Icon(Icons.school, color: Colors.white, size: 40),
+          child: Icon(Icons.school, color: Colors.white, size: context.f(40)),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: context.h(20)),
         Text(
           'Burs Eşleştirme',
-          style: GoogleFonts.notoSerif(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            height: 1.2,
-            color: cs.onSurface,
-          ),
+          style: AppTheme.notoSerif(context, size: 28, weight: FontWeight.w700, height: 1.2, color: cs.onSurface),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: context.h(6)),
         Text(
           'Size en uygun bursu bulalım',
-          style: GoogleFonts.inter(
-            fontSize: 15,
-            height: 1.4,
-            color: cs.onSurfaceVariant,
-          ),
+          style: AppTheme.inter(context, size: 15, height: 1.4, color: cs.onSurfaceVariant),
         ),
       ],
     );
@@ -152,7 +143,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(context.w(28)),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(230),
         borderRadius: BorderRadius.circular(AppTheme.lgRadius),
@@ -176,7 +167,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               validator: (v) =>
                   v != null && v.contains('@') ? null : 'Geçerli bir e-posta girin',
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: context.h(20)),
             TextFormField(
               controller: _passwordController,
               decoration: const InputDecoration(
@@ -189,40 +180,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               validator: (v) =>
                   v != null && v.isNotEmpty ? null : 'Şifre girin',
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: context.h(8)),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () {},
                 style: TextButton.styleFrom(
                   foregroundColor: cs.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: context.w(8), vertical: context.h(4)),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('Şifremi Unuttum'),
+                child: Text('Şifremi Unuttum', style: AppTheme.inter(context, size: 14, color: cs.primary, weight: FontWeight.w500)),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: context.h(12)),
             if (authState.error != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: EdgeInsets.only(bottom: context.h(16)),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(context.w(12)),
                   decoration: BoxDecoration(
                     color: cs.error.withAlpha(12),
                     borderRadius: BorderRadius.circular(AppTheme.smRadius),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: cs.error, size: 18),
-                      const SizedBox(width: 8),
+                      Icon(Icons.error_outline, color: cs.error, size: context.f(18)),
+                      SizedBox(width: context.w(8)),
                       Flexible(
                         child: Text(
                           authState.error!,
                           style: TextStyle(
                             color: cs.error,
-                            fontSize: 13,
+                            fontSize: context.f(13),
                           ),
                         ),
                       ),
@@ -231,7 +222,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 ),
               ),
             SizedBox(
-              height: 52,
+              height: context.h(52),
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppTheme.smRadius),
@@ -239,8 +230,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   boxShadow: [
                     BoxShadow(
                       color: AppTheme.primaryBlue.withAlpha(60),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
+                      blurRadius: context.w(16),
+                      offset: Offset(0, context.h(4)),
                     ),
                   ],
                 ),
@@ -255,10 +246,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     disabledForegroundColor: Colors.white38,
                   ),
                   child: authState.status == AuthStatus.loading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
+                      ? SizedBox(
+                          height: context.f(22),
+                          width: context.f(22),
+                          child: const CircularProgressIndicator(
                             strokeWidth: 2.5,
                             color: Colors.white,
                           ),
@@ -267,8 +258,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text('Giriş Yap'),
-                            const SizedBox(width: 8),
-                            Icon(Icons.arrow_forward, size: 18),
+                            SizedBox(width: context.w(8)),
+                            Icon(Icons.arrow_forward, size: context.f(18)),
                           ],
                         ),
                 ),
@@ -288,17 +279,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       children: [
         Text(
           'Hesabın yok mu?',
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: cs.onSurfaceVariant,
-          ),
+          style: AppTheme.inter(context, size: 14, color: cs.onSurfaceVariant),
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: context.w(4)),
         TextButton(
           onPressed: () => context.push('/register'),
           style: TextButton.styleFrom(
             foregroundColor: cs.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: EdgeInsets.symmetric(horizontal: context.w(8)),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),

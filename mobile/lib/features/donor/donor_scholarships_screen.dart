@@ -36,7 +36,7 @@ class DonorScholarshipsScreen extends ConsumerWidget {
                             const Icon(Icons.check_circle, color: Colors.green, size: 16)
                           else
                             const Icon(Icons.cancel, color: Colors.red, size: 16),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           const Icon(Icons.chevron_right),
                         ],
                       ),

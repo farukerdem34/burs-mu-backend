@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
+import '../core/screen_utils.dart';
 
 class AppNotification {
   final String id;
@@ -74,13 +75,13 @@ class StackedNotificationOverlay extends ConsumerWidget {
     if (notifications.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: EdgeInsets.only(bottom: context.h(24)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           for (final notification in notifications)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: EdgeInsets.only(top: context.h(8)),
               child: _NotificationCard(
                 key: ValueKey(notification.id),
                 notification: notification,
@@ -155,8 +156,8 @@ class _NotificationCardState extends State<_NotificationCard>
         child: FadeTransition(
           opacity: _opacity,
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            margin: EdgeInsets.symmetric(horizontal: context.w(20)),
+            padding: EdgeInsets.symmetric(horizontal: context.w(16), vertical: context.h(14)),
             decoration: BoxDecoration(
               color: widget.notification.isError
                   ? widget.cs.error
@@ -165,8 +166,8 @@ class _NotificationCardState extends State<_NotificationCard>
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withAlpha(40),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  blurRadius: context.w(12),
+                  offset: Offset(0, context.h(4)),
                 ),
               ],
             ),
@@ -177,22 +178,22 @@ class _NotificationCardState extends State<_NotificationCard>
                       ? Icons.error_outline
                       : Icons.check_circle_outline,
                   color: Colors.white,
-                  size: 20,
+                  size: context.f(20),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: context.w(12)),
                 Expanded(
                   child: Text(
                     widget.notification.message,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      fontSize: context.f(14),
                       height: 1.3,
                     ),
                   ),
                 ),
                 GestureDetector(
                   onTap: widget.onDismiss,
-                  child: const Icon(Icons.close, color: Colors.white70, size: 18),
+                  child: Icon(Icons.close, color: Colors.white70, size: context.f(18)),
                 ),
               ],
             ),
