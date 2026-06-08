@@ -18,7 +18,7 @@
 |--------|-------------|
 | 201 | Burs oluşturuldu |
 | 400 | Geçersiz şehir, departman veya gelir düzeyi |
-| 403 | Sadece yöneticiler burs oluşturabilir |
+| 403 | Sadece yöneticiler ve bağışçılar burs oluşturabilir |
 
 **Success Response Schema:**
 

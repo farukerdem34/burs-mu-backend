@@ -398,7 +398,7 @@ paths:
         "400":
           description: Geçersiz şehir, departman veya gelir düzeyi
         "403":
-          description: Sadece yöneticiler burs oluşturabilir
+          description: Sadece yöneticiler ve bağışçılar burs oluşturabilir
 
   /scholarships/{id}:
     get:

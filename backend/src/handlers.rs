@@ -862,10 +862,10 @@ pub async fn create_scholarship(
     auth: AuthUser,
     Json(mut body): Json<CreateScholarshipRequest>,
 ) -> impl IntoResponse {
-    if auth.role != UserRole::Admin {
+    if auth.role != UserRole::Admin && auth.role != UserRole::Donor {
         return (
             StatusCode::FORBIDDEN,
-            Json("Sadece yöneticiler burs oluşturabilir"),
+            Json("Sadece yöneticiler ve bağışçılar burs oluşturabilir"),
         )
             .into_response();
     }
