@@ -23,3 +23,4 @@ target
 /backend/.DS_Store
 /backend/target/debug
 /backend/target/debug
+/.serena/.DS_Store
